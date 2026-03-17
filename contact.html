@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — Marchel Shevchenko</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="pages/contact.js" defer></script>
+  <style>
+    .contact-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.5rem; }
+
+    .form-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem; }
+    .form-row.col { flex-direction: column; align-items: flex-start; }
+    .form-prompt { color: var(--green); font-size: 0.82rem; white-space: nowrap; }
+    .form-status { min-height: 1.4rem; font-family: var(--font-vt); font-size: 1rem; margin-top: 0.6rem; }
+    .form-status.ok  { color: var(--green); text-shadow: var(--glow-g); }
+    .form-status.err { color: var(--red); }
+
+    .contact-links { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .contact-link {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.83rem; color: var(--text-dim);
+      padding: 0.35rem 0.5rem; border: 1px solid transparent;
+      transition: all var(--transition);
+    }
+    .contact-link:hover {
+      color: var(--cyan); border-color: rgba(0,229,255,0.3);
+      background: rgba(0,229,255,0.04); padding-left: 1rem;
+      text-shadow: var(--glow-c);
+    }
+    .cl-ico { color: var(--cyan); font-size: 0.75rem; }
+
+    /* Mini terminal */
+    .mini-term { margin-top: 0.5rem; }
+    .mt-hdr {
+      font-family: var(--font-pixel); font-size: 0.44rem;
+      color: var(--green); padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border); margin-bottom: 0.4rem;
+    }
+    .mt-output {
+      min-height: 90px; max-height: 140px; overflow-y: auto;
+      font-size: 0.82rem; margin-bottom: 0.4rem;
+    }
+    .mt-line { margin: 0.15rem 0; line-height: 1.5; }
+    .mt-line.cmd  { color: var(--amber); }
+    .mt-line.resp { color: var(--text); }
+    .mt-line.err  { color: var(--red); }
+    .mt-line.ok   { color: var(--green); text-shadow: var(--glow-g); }
+    .mt-row { display: flex; align-items: center; border-top: 1px solid var(--border); padding-top: 0.35rem; }
+    .mt-prompt-txt { color: var(--green); font-size: 0.85rem; white-space: nowrap; }
+    .mt-inp {
+      background: transparent; border: none;
+      color: var(--amber); font-family: var(--font-mono);
+      font-size: 0.85rem; flex: 1; outline: none;
+      caret-color: var(--green); cursor: none;
+    }
+
+    @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="section-header reveal">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">open ./contact_relay.exe</span>
+    </div>
+
+    <div class="contact-grid">
+      <!-- Form -->
+      <div class="t-card reveal">
+        <div class="t-card-header"><div class="t-card-dot"></div>CONTACT_RELAY.EXE</div>
+        <div class="t-card-body">
+          <div class="form-row">
+            <span class="form-prompt">&gt; SENDER_ID:&nbsp;&nbsp;</span>
+            <input type="text" class="r-input" id="cf-name" placeholder="your_name" />
+          </div>
+          <div class="form-row">
+            <span class="form-prompt">&gt; EMAIL_ADDR:&nbsp;</span>
+            <input type="email" class="r-input" id="cf-email" placeholder="user@domain.com" />
+          </div>
+          <div class="form-row col">
+            <span class="form-prompt">&gt; MESSAGE:&nbsp;&nbsp;&nbsp;</span>
+            <textarea class="r-input" id="cf-message" placeholder="ENTER MESSAGE..." style="margin-top:0.4rem"></textarea>
+          </div>
+          <button class="btn btn-primary btn-block" id="cf-send">TRANSMIT MESSAGE →</button>
+          <div class="form-status" id="form-status"></div>
+        </div>
+      </div>
+
+      <!-- Links + Terminal -->
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>NETWORK_NODES.DAT</div>
+        <div class="t-card-body">
+          <div class="contact-links">
+            <a href="mailto:Rianari990@gmail.com" class="contact-link"><span class="cl-ico">⬡</span> MAIL://Rianari990@gmail.com</a>
+            <a href="#" class="contact-link"><span class="cl-ico">⬡</span> GITHUB://marchel-shevchenko</a>
+            <a href="#" class="contact-link"><span class="cl-ico">⬡</span> LINKEDIN://marchel-shevchenko</a>
+            <a href="#" class="contact-link"><span class="cl-ico">⬡</span> TWITTER://@marchel_ai</a>
+          </div>
+          <div class="divider">────────────────────</div>
+          <div class="mini-term">
+            <div class="mt-hdr">QUICK TERMINAL — type 'help'</div>
+            <div class="mt-output" id="mt-output">
+              <div class="mt-line resp">AXION/OS terminal ready. Type 'help'.</div>
+            </div>
+            <div class="mt-row">
+              <span class="mt-prompt-txt">$&gt;&nbsp;</span>
+              <input type="text" class="mt-inp" id="mt-input" placeholder="command..." autocomplete="off" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

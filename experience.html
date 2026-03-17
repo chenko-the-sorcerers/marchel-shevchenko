@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Experience — Marchel Shevchenko</title>
+  <meta name="description" content="Work experience at Kalbe Farma, X Corp, Data Sorcerers, Coding Collective Singapore." />
+  <!-- SEO -->
+  <meta name="author" content="Marchel Andrian Shevchenko" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://marchel-shevchenko.vercel.app/experience" />
+  <meta property="og:title" content="Experience — Marchel Shevchenko" />
+  <meta property="og:description" content="Work experience timeline of Marchel Shevchenko — AI Engineer, Founder, ML Engineer, Teaching Assistant." />
+  <meta property="og:url" content="https://marchel-shevchenko.vercel.app/experience" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="pages/experience.js" defer></script>
+  <style>
+    /* ── TIMELINE WRAPPER ── */
+    .timeline {
+      position: relative;
+      padding-left: 0;
+      margin-top: 0.5rem;
+    }
+
+    /* Vertical rail */
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 120px;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        var(--border-hi) 5%,
+        var(--border-hi) 95%,
+        transparent 100%
+      );
+    }
+
+    /* ── TIMELINE ITEM ── */
+    .tl-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 0;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .tl-item:last-child { margin-bottom: 0; }
+
+    /* Left: year column */
+    .tl-year-col {
+      padding-right: 1.8rem;
+      text-align: right;
+      padding-top: 1.2rem;
+    }
+    .tl-year {
+      font-family: var(--font-vt);
+      font-size: 1.05rem;
+      color: var(--amber);
+      text-shadow: var(--glow-a);
+      line-height: 1.3;
+      display: block;
+    }
+    .tl-year-end {
+      font-family: var(--font-vt);
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      display: block;
+    }
+
+    /* Node dot on rail */
+    .tl-dot {
+      position: absolute;
+      left: 112px;
+      top: 1.35rem;
+      width: 16px; height: 16px;
+      border: 2px solid var(--green);
+      background: var(--bg);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(0,255,65,0.6), 0 0 20px rgba(0,255,65,0.2);
+      z-index: 2;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .tl-item:hover .tl-dot {
+      transform: scale(1.4);
+      box-shadow: 0 0 16px rgba(0,255,65,0.9), 0 0 40px rgba(0,255,65,0.4);
+    }
+    .tl-dot::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: dot-pulse 2s ease-in-out infinite;
+    }
+    @keyframes dot-pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.4; transform: scale(0.6); }
+    }
+
+    /* Active/current role — amber dot */
+    .tl-item.current .tl-dot {
+      border-color: var(--amber);
+      box-shadow: 0 0 8px rgba(255,179,0,0.7), 0 0 20px rgba(255,179,0,0.3);
+    }
+    .tl-item.current .tl-dot::after { background: var(--amber); }
+
+    /* Right: card */
+    .tl-card {
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      margin-left: 1.5rem;
+      padding: 1.2rem 1.4rem;
+      position: relative;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+      overflow: hidden;
+    }
+    .tl-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 3px;
+      background: var(--green);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .tl-item.current .tl-card::before { background: var(--amber); opacity: 1; }
+    .tl-item:hover .tl-card {
+      border-color: var(--green);
+      box-shadow: 0 4px 24px rgba(0,255,65,0.1);
+      transform: translateX(4px);
+    }
+    .tl-item:hover .tl-card::before { opacity: 1; }
+
+    /* Connector arrow from dot to card */
+    .tl-connector {
+      position: absolute;
+      left: 128px; top: 1.6rem;
+      width: 24px; height: 1px;
+      background: var(--border-hi);
+      z-index: 1;
+    }
+    .tl-connector::after {
+      content: '▶';
+      position: absolute;
+      right: -8px; top: -7px;
+      font-size: 0.6rem;
+      color: var(--border-hi);
+    }
+
+    .tl-role {
+      font-family: var(--font-vt);
+      font-size: 1.35rem;
+      color: var(--green);
+      text-shadow: var(--glow-g);
+      line-height: 1.1;
+      margin-bottom: 0.2rem;
+    }
+    .tl-item.current .tl-role { color: var(--amber); text-shadow: var(--glow-a); }
+
+    .tl-company {
+      font-size: 0.85rem;
+      color: var(--cyan);
+      margin-bottom: 0.1rem;
+    }
+    .tl-location {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.7rem;
+    }
+    .tl-desc {
+      font-size: 0.83rem;
+      color: var(--text);
+      line-height: 1.8;
+      margin-bottom: 0.8rem;
+    }
+    .tl-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+    /* Current badge */
+    .tl-badge-now {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.68rem; color: var(--amber);
+      border: 1px solid var(--amber-dim);
+      padding: 0.1rem 0.5rem;
+      margin-left: 0.7rem;
+      vertical-align: middle;
+      animation: blink 1.5s step-end infinite;
+    }
+
+    @media (max-width: 600px) {
+      .timeline::before { left: 0; }
+      .tl-item { grid-template-columns: 1fr; padding-left: 1.5rem; }
+      .tl-year-col { text-align: left; padding: 0 0 0.4rem 0; }
+      .tl-dot { left: -8px; }
+      .tl-connector { display: none; }
+      .tl-card { margin-left: 0; transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="section-header reveal">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./experience.log</span>
+      <span class="sh-args">--full --timeline</span>
+    </div>
+    <div class="timeline reveal" id="timeline"></div>
+  </div>
+</body>
+</html>

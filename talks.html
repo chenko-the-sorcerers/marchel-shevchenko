@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talks — Marchel Shevchenko</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="pages/talks.js" defer></script>
+  <style>
+    .tabs {
+      display: flex; gap: 0.3rem; flex-wrap: wrap;
+      margin-bottom: 1.8rem; border-bottom: 1px solid var(--border);
+      padding-bottom: 0.8rem;
+    }
+    .tab-btn {
+      font-family: var(--font-mono); font-size: 0.78rem;
+      padding: 0.3rem 0.8rem;
+      border: 1px solid var(--border-hi); background: transparent;
+      color: var(--text-dim); cursor: none; transition: all var(--transition);
+    }
+    .tab-btn:hover { color: var(--green); border-color: var(--green); }
+    .tab-btn.active { background: var(--green); color: var(--bg); border-color: var(--green); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .talk-item {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      display: grid; grid-template-columns: 44px 1fr;
+      gap: 0.8rem; font-size: 0.83rem;
+    }
+    .talk-item:last-child { border-bottom: none; }
+    .talk-year { font-family: var(--font-vt); font-size: 1rem; color: var(--amber); text-shadow: var(--glow-a); }
+    .talk-title { color: var(--text); line-height: 1.55; margin-bottom: 0.2rem; }
+    .talk-host  { color: var(--text-dim); font-size: 0.76rem; }
+
+    .talk-item.judge .talk-title  { color: var(--cyan); }
+    .talk-item.mentor .talk-title { color: var(--green); }
+
+    .stat-chips { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .stat-chip {
+      border: 1px solid var(--border-hi); padding: 0.3rem 0.8rem;
+      font-size: 0.78rem; color: var(--text-dim); background: var(--panel);
+    }
+    .stat-chip span { font-family: var(--font-vt); font-size: 1.1rem; color: var(--green); margin-right: 0.3rem; }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="section-header reveal">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">ls ./talks/</span>
+      <span class="sh-args">--all</span>
+    </div>
+
+    <div class="stat-chips reveal">
+      <div class="stat-chip"><span id="sc-sem">0</span> SEMINARS</div>
+      <div class="stat-chip"><span id="sc-ws">0</span> WORKSHOPS</div>
+      <div class="stat-chip"><span id="sc-pl">0</span> PUBLIC LECTURES</div>
+      <div class="stat-chip"><span id="sc-jm">0</span> JUDGE / MENTOR ROLES</div>
+    </div>
+
+    <div class="tabs reveal">
+      <button class="tab-btn active" data-tab="seminars">SEMINARS</button>
+      <button class="tab-btn" data-tab="workshops">WORKSHOPS</button>
+      <button class="tab-btn" data-tab="lectures">PUBLIC LECTURES</button>
+      <button class="tab-btn" data-tab="judge">JUDGE & MENTOR</button>
+    </div>
+
+    <div id="tab-seminars"  class="tab-panel active"></div>
+    <div id="tab-workshops" class="tab-panel"></div>
+    <div id="tab-lectures"  class="tab-panel"></div>
+    <div id="tab-judge"     class="tab-panel"></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — PAGE NOT FOUND // AXION/OS</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <style>
+    .err-wrap {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: calc(var(--nav-h) + 2rem) 2rem 4rem;
+      text-align: center;
+    }
+    .err-code {
+      font-family: var(--font-vt);
+      font-size: clamp(6rem, 20vw, 14rem);
+      color: var(--green); text-shadow: var(--glow-g);
+      line-height: 1;
+      animation: glitch-big 3s infinite;
+    }
+    @keyframes glitch-big {
+      0%,90%,100% { text-shadow: var(--glow-g); transform: none; }
+      91% { text-shadow: 4px 0 var(--red), -4px 0 var(--cyan); transform: translate(-2px); }
+      92% { text-shadow: -4px 0 var(--red), 4px 0 var(--cyan); transform: translate(2px); }
+      93% { text-shadow: var(--glow-g); transform: none; }
+    }
+    .err-title {
+      font-family: var(--font-pixel); font-size: 0.65rem;
+      color: var(--amber); text-shadow: var(--glow-a);
+      letter-spacing: 0.1em; margin: 0.5rem 0 1.5rem;
+    }
+    .err-terminal {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 1.2rem 1.8rem; max-width: 500px; width: 100%;
+      text-align: left; margin-bottom: 2rem;
+    }
+    .err-log { font-size: 0.82rem; line-height: 2; color: var(--text-dim); }
+    .err-log .ok   { color: var(--green); }
+    .err-log .err  { color: var(--red); }
+    .err-log .warn { color: var(--amber); }
+    .err-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div class="err-wrap">
+    <div class="err-code">404</div>
+    <div class="err-title">// KERNEL PANIC — PAGE_NOT_FOUND</div>
+
+    <div class="err-terminal">
+      <div class="err-log">
+        <span class="err">[ERR]  Segfault at address: <span id="err-path"></span></span>
+        <span class="warn">[WARN] Requested node does not exist in filesystem</span>
+        <span class="warn">[WARN] Memory dump: 0x00000000 0x00000000</span>
+        <span class="ok">[SYS]  Core systems intact — returning to safe mode</span>
+        <span class="ok">[SYS]  Operator: MARCHEL SHEVCHENKO — ONLINE</span>
+      </div>
+    </div>
+
+    <div class="err-btns">
+      <a href="index.html" class="btn btn-primary">↩ RETURN TO HOME</a>
+      <a href="projects.html" class="btn btn-ghost">VIEW PROJECTS</a>
+      <a href="chat.html" class="btn btn-amber">ASK AXION</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      Navbar.render();
+      Footer.render();
+      CRT.init({ clockId: 'nav-clock' });
+      document.getElementById('err-path').textContent = location.pathname;
+    });
+  </script>
+</body>
+</html>

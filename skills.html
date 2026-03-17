@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skills — Marchel Shevchenko</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="pages/skills.js" defer></script>
+  <style>
+    .skills-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+
+    /* Skill bars */
+    .skill-item { margin-bottom: 1rem; }
+    .skill-label-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.82rem; margin-bottom: 0.3rem;
+    }
+    .skill-name { color: var(--text); }
+    .skill-pct  { font-family: var(--font-vt); font-size: 1rem; color: var(--amber); text-shadow: var(--glow-a); }
+    .skill-track {
+      height: 9px; background: var(--bg2);
+      border: 1px solid var(--border); overflow: hidden; position: relative;
+    }
+    .skill-fill {
+      height: 100%; width: 0%;
+      transition: width 1.3s cubic-bezier(0.23,1,0.32,1);
+      position: relative;
+    }
+    .skill-fill::after {
+      content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+      width: 3px; filter: blur(2px);
+    }
+    .skill-fill.green  { background: linear-gradient(90deg, var(--green-dark), var(--green)); }
+    .skill-fill.green::after  { background: var(--green); }
+    .skill-fill.amber  { background: linear-gradient(90deg, #5a3000, var(--amber)); }
+    .skill-fill.amber::after  { background: var(--amber); }
+    .skill-fill.cyan   { background: linear-gradient(90deg, #00303d, var(--cyan)); }
+    .skill-fill.cyan::after   { background: var(--cyan); }
+    .skill-fill.purple { background: linear-gradient(90deg, #1e0040, #cc88ff); }
+    .skill-fill.purple::after { background: #cc88ff; }
+
+    /* Tool tree */
+    .tool-category { color: var(--amber); font-size: 0.85rem; margin: 0.6rem 0 0.2rem; }
+    .tool-item { font-size: 0.82rem; color: var(--text-dim); padding: 0.15rem 0 0.15rem 1rem; transition: color 0.2s; }
+    .tool-item:hover { color: var(--green); }
+    .tool-item::before { content: '├─ '; color: var(--border-hi); }
+
+    /* Certs */
+    .cert-item {
+      display: flex; gap: 1rem; align-items: flex-start;
+      padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem;
+    }
+    .cert-item:last-child { border-bottom: none; }
+    .cert-year { color: var(--amber); font-family: var(--font-vt); font-size: 1rem; white-space: nowrap; min-width: 36px; }
+    .cert-title { color: var(--text); line-height: 1.5; }
+    .cert-org { color: var(--text-dim); font-size: 0.75rem; }
+
+    /* Achievements */
+    .ach-item {
+      display: grid; grid-template-columns: 44px 1fr;
+      gap: 0.75rem; padding: 0.65rem 0;
+      border-bottom: 1px solid var(--border); font-size: 0.82rem;
+    }
+    .ach-item:last-child { border-bottom: none; }
+    .ach-year { color: var(--amber); font-family: var(--font-vt); font-size: 1rem; }
+    .ach-title { color: var(--text); line-height: 1.5; }
+    .ach-org { color: var(--cyan); font-size: 0.75rem; }
+
+    @media (max-width: 768px) { .skills-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+
+    <!-- Skills + Tools -->
+    <div class="section-header reveal">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">run ./skillscan</span>
+      <span class="sh-args">--verbose</span>
+    </div>
+    <div class="skills-grid">
+      <div class="t-card reveal">
+        <div class="t-card-header"><div class="t-card-dot"></div>CORE_SYSTEMS.LOG</div>
+        <div class="t-card-body" id="skill-bars"></div>
+      </div>
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>TOOL_STACK.INI</div>
+        <div class="t-card-body" id="tool-tree"></div>
+      </div>
+    </div>
+
+    <!-- Certifications -->
+    <div class="section-header reveal" style="margin-top:2.5rem;">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./certifications.dat</span>
+    </div>
+    <div class="t-card reveal">
+      <div class="t-card-header"><div class="t-card-dot"></div>CERTIFICATIONS.DAT</div>
+      <div class="t-card-body" id="cert-list"></div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="section-header reveal" style="margin-top:2.5rem;">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./achievements.log</span>
+      <span class="sh-args">--sort=year</span>
+    </div>
+    <div class="t-card reveal">
+      <div class="t-card-header"><div class="t-card-dot"></div>ACHIEVEMENTS.LOG</div>
+      <div class="t-card-body" id="ach-list"></div>
+    </div>
+
+  </div>
+</body>
+</html>
