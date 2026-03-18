@@ -22,5 +22,22 @@
         "source": "/styles/(.*).css",
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
       }
+    ],
+    "rewrites": [
+      { "source": "/", "destination": "/index.html" },
+      { "source": "/about", "destination": "/about.html" },
+      { "source": "/chat", "destination": "/chat.html" },
+      { "source": "/contact", "destination": "/contact.html" },
+      { "source": "/experience", "destination": "/experience.html" },
+      { "source": "/game", "destination": "/game.html" },
+      { "source": "/gesture", "destination": "/gesture.html" },
+      { "source": "/og-image", "destination": "/og-image.html" },
+      { "source": "/origin", "destination": "/origin.html" },
+      { "source": "/projects", "destination": "/projects.html" },
+      { "source": "/publications", "destination": "/publications.html" },
+      { "source": "/rpg", "destination": "/rpg.html" },
+      { "source": "/skills", "destination": "/skills.html" },
+      { "source": "/talks", "destination": "/talks.html" },
+      { "source": "/(.*)", "destination": "/404.html" }
     ]
   }
