@@ -1,6 +1,8 @@
 /* pages/about.js */
     document.addEventListener('DOMContentLoaded', () => {
       Navbar.render();
+  Terminal.init();
+  Wayang.init();
       Footer.render();
       CRT.init({ clockId: 'nav-clock' });
 

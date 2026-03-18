@@ -225,33 +225,124 @@
       }
     }
   
-    /* ── Cursor particle trail ── */
+    /* ── Cursor particle trail — Aksara Nusantara ── */
     function initParticles() {
-      const COLORS = ['#00ff41','#00e5ff','#ffb300','#00ff41','#00ff41'];
+      // Aksara Jawa (Hanacaraka) + Batak + Lontara characters
+      const AKSARA = [
+        // Hanacaraka (Javanese)
+        'ꦲ','ꦤ','ꦕ','ꦫ','ꦏ','ꦢ','ꦠ','ꦱ','ꦮ','ꦭ',
+        'ꦥ','ꦝ','ꦗ','ꦪ','ꦚ','ꦩ','ꦒ','ꦧ','ꦛ','ꦔ',
+        // Batak
+        'ᯀ','ᯂ','ᯄ','ᯅ','ᯆ','ᯇ','ᯈ','ᯉ','ᯊ','ᯋ',
+        // Lontara (Bugis)
+        'ᨀ','ᨁ','ᨂ','ᨃ','ᨄ','ᨅ','ᨆ','ᨇ','ᨈ','ᨉ',
+        // Mix in some binary/code for tech vibe
+        '0','1','λ','Δ','∑','π','∞','◈','▸','◆',
+      ];
+
+      const COLORS = [
+        '#00ff41','#00ff41','#00ff41', // mostly green
+        '#00e5ff','#ffb300',           // cyan & amber
+        '#cc88ff',                     // occasional purple
+      ];
+
       let lastX = 0, lastY = 0;
-      document.addEventListener('mousemove', e => {
-        const dx = e.clientX - lastX, dy = e.clientY - lastY;
-        if (Math.abs(dx) + Math.abs(dy) < 4) return; // throttle
-        lastX = e.clientX; lastY = e.clientY;
-        spawnParticle(e.clientX, e.clientY);
-      });
-  
-      function spawnParticle(x, y) {
-        const p    = document.createElement('div');
-        const size = 3 + Math.random() * 4;
-        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        p.className = 'cursor-particle';
-        p.style.cssText = `
-          left:${x + (Math.random()-0.5)*12}px;
-          top:${y + (Math.random()-0.5)*12}px;
-          width:${size}px; height:${size}px;
-          background:${color};
-          box-shadow:0 0 ${size*2}px ${color};
-          animation-duration:${0.4 + Math.random()*0.4}s;
+      let trailCanvas, trailCtx;
+      let trails = []; // { x, y, char, color, alpha, size, vx, vy, age }
+
+      // Use canvas for performance
+      function initTrailCanvas() {
+        trailCanvas = document.createElement('canvas');
+        trailCanvas.id = 'aksara-trail-canvas';
+        trailCanvas.style.cssText = `
+          position:fixed;inset:0;z-index:9996;
+          pointer-events:none;width:100%;height:100%;
         `;
-        document.body.appendChild(p);
-        p.addEventListener('animationend', () => p.remove());
+        trailCanvas.width  = window.innerWidth;
+        trailCanvas.height = window.innerHeight;
+        document.body.appendChild(trailCanvas);
+        trailCtx = trailCanvas.getContext('2d');
+        window.addEventListener('resize', () => {
+          trailCanvas.width  = window.innerWidth;
+          trailCanvas.height = window.innerHeight;
+        });
       }
+
+      function spawnAksara(x, y, speed) {
+        const intensity = Math.min(speed / 8, 1);
+        const count = 1 + Math.floor(intensity * 2);
+        for (let i = 0; i < count; i++) {
+          const char  = AKSARA[Math.floor(Math.random() * AKSARA.length)];
+          const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+          const size  = 10 + Math.random() * 14;
+          trails.push({
+            x: x + (Math.random() - 0.5) * 16,
+            y: y + (Math.random() - 0.5) * 16,
+            char, color, size,
+            alpha: 0.7 + Math.random() * 0.3,
+            vx: (Math.random() - 0.5) * 1.2,
+            vy: -0.5 - Math.random() * 1.5,
+            age: 0,
+            maxAge: 28 + Math.floor(Math.random() * 20),
+            rotate: (Math.random() - 0.5) * 0.3,
+            rotateSpeed: (Math.random() - 0.5) * 0.05,
+          });
+        }
+      }
+
+      function animateTrails() {
+        if (!trailCtx) return;
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+
+        for (let i = trails.length - 1; i >= 0; i--) {
+          const t = trails[i];
+          t.age++;
+          t.x  += t.vx;
+          t.y  += t.vy;
+          t.vy += 0.04; // gentle gravity
+          t.rotate += t.rotateSpeed;
+          const progress = t.age / t.maxAge;
+          const alpha = t.alpha * (1 - progress);
+          const scale = 1 - progress * 0.3;
+
+          trailCtx.save();
+          trailCtx.globalAlpha = alpha;
+          trailCtx.translate(t.x, t.y);
+          trailCtx.rotate(t.rotate);
+          trailCtx.scale(scale, scale);
+
+          // Glow
+          trailCtx.shadowColor = t.color;
+          trailCtx.shadowBlur  = 8;
+          trailCtx.fillStyle   = t.color;
+          trailCtx.font = `${t.size}px 'Share Tech Mono', monospace`;
+          trailCtx.textAlign = 'center';
+          trailCtx.textBaseline = 'middle';
+          trailCtx.fillText(t.char, 0, 0);
+
+          trailCtx.restore();
+
+          if (t.age >= t.maxAge) trails.splice(i, 1);
+        }
+        requestAnimationFrame(animateTrails);
+      }
+
+      document.addEventListener('mousemove', e => {
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        const speed = Math.sqrt(dx*dx + dy*dy);
+        if (speed < 3) { lastX = e.clientX; lastY = e.clientY; return; }
+        lastX = e.clientX; lastY = e.clientY;
+        spawnAksara(e.clientX, e.clientY, speed);
+      });
+
+      // Burst on click
+      document.addEventListener('click', e => {
+        for (let i = 0; i < 8; i++) spawnAksara(e.clientX, e.clientY, 20);
+      });
+
+      initTrailCanvas();
+      animateTrails();
     }
   
     /* ── Color mode toggle ── */

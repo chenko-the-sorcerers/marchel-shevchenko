@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Origin Story — Marchel Shevchenko</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>"/>
+  <link rel="stylesheet" href="styles/globals.css"/>
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="components/terminal.js" defer></script>
+  <style>
+    body { overflow-x: hidden; background: #020905; }
+
+    .comic-wrap {
+      padding: calc(var(--nav-h) + 1rem) 0 4rem;
+    }
+
+    /* ── TITLE ── */
+    .comic-header {
+      text-align: center; padding: 1.5rem 1.5rem 1rem;
+    }
+    .comic-main-title {
+      font-family: var(--font-vt);
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      color: var(--green); text-shadow: var(--glow-g);
+      line-height: 1;
+    }
+    .comic-sub {
+      font-size: 0.72rem; color: var(--text-dim);
+      letter-spacing: 0.2em; margin-top: 0.3rem;
+    }
+
+    /* ── TRACK ── */
+    .track-outer {
+      overflow: hidden; cursor: grab; position: relative;
+    }
+    .track-outer:active { cursor: grabbing; }
+    .comic-track {
+      display: flex;
+      transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+      will-change: transform;
+    }
+
+    /* ── PANEL ── */
+    .panel {
+      min-width: 100vw;
+      min-height: 80vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: stretch;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .panel.single-col {
+      grid-template-columns: 1fr;
+    }
+    .panel-border {
+      position: absolute; inset: 0;
+      border: 3px solid var(--border-hi);
+      pointer-events: none; z-index: 10;
+    }
+
+    /* ── ILLUSTRATION SIDE ── */
+    .illus-side {
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      min-height: 400px;
+    }
+    .illus-side canvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* ── TEXT SIDE ── */
+    .text-side {
+      padding: 2.5rem 2rem 2rem;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      position: relative; z-index: 2;
+    }
+    .panel-num-badge {
+      font-family: var(--font-pixel);
+      font-size: 0.42rem; letter-spacing: 0.15em;
+      padding: 0.2rem 0.6rem;
+      border: 1px solid; display: inline-block;
+      margin-bottom: 0.8rem; width: fit-content;
+    }
+    .panel-year-title {
+      font-family: var(--font-vt);
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      line-height: 1; margin-bottom: 0.6rem;
+    }
+    .panel-chapter-sub {
+      font-size: 0.7rem; letter-spacing: 0.15em;
+      margin-bottom: 1rem; color: var(--text-dim);
+    }
+    .panel-narrative {
+      font-size: 0.83rem; line-height: 1.9;
+      color: var(--text);
+    }
+    .panel-narrative em { font-style: normal; }
+    .panel-narrative strong { font-style: normal; }
+    .panel-pull-quote {
+      margin-top: 1.2rem;
+      font-family: var(--font-vt);
+      font-size: 1.1rem; line-height: 1.4;
+      padding-left: 1rem; border-left: 3px solid;
+    }
+    .panel-tags-row {
+      display: flex; flex-wrap: wrap; gap: 0.3rem;
+      margin-top: 1rem;
+    }
+
+    /* ── ENDING PANEL ── */
+    .ending-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 1rem; margin-top: 1.5rem; text-align: center;
+    }
+    .ending-stat .n { font-family: var(--font-vt); font-size: 2rem; }
+    .ending-stat .l { font-size: 0.62rem; color: var(--text-dim); letter-spacing: 0.1em; }
+
+    /* ── PROGRESS ── */
+    .comic-bottom {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.8rem; padding: 1rem;
+    }
+    .prog-dots { display: flex; gap: 0.5rem; }
+    .prog-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border-hi); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .prog-dot.active {
+      background: var(--green); box-shadow: 0 0 8px var(--green);
+      transform: scale(1.3);
+    }
+    .comic-nav-row { display: flex; gap: 1rem; align-items: center; }
+    .nav-btn {
+      font-family: var(--font-mono); font-size: 0.75rem;
+      padding: 0.4rem 1.2rem;
+      background: var(--panel); border: 1px solid var(--border-hi);
+      color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+    }
+    .nav-btn:hover { border-color: var(--green); color: var(--green); }
+    .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .nav-btn.primary { color: var(--green); border-color: var(--green); }
+    .panel-counter { font-size: 0.72rem; color: var(--text-dim); }
+
+    /* Scanline overlay on illustrations */
+    .illus-scanline {
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        to bottom, transparent 0, transparent 3px,
+        rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px
+      );
+      pointer-events: none; z-index: 3;
+    }
+
+    /* speech bubble */
+    .speech-bubble {
+      position: absolute;
+      background: rgba(2,9,5,0.92);
+      border: 1px solid var(--border-hi);
+      padding: 0.4rem 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.62rem; color: var(--green);
+      max-width: 180px; line-height: 1.5;
+      z-index: 5;
+    }
+    .speech-bubble::after {
+      content: ''; position: absolute;
+      bottom: -8px; left: 16px;
+      border: 4px solid transparent;
+      border-top-color: var(--border-hi);
+    }
+
+    @media (max-width: 768px) {
+      .panel { grid-template-columns: 1fr; min-height: auto; }
+      .illus-side { min-height: 260px; }
+      .text-side { padding: 1.5rem 1rem; }
+      .ending-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="comic-wrap">
+
+  <div class="comic-header">
+    <div class="comic-main-title">ORIGIN STORY</div>
+    <div class="comic-sub">// THE MAKING OF AN AI ARCHITECT · MARCHEL SHEVCHENKO</div>
+  </div>
+
+  <div class="track-outer" id="track-outer">
+    <div class="comic-track" id="comic-track">
+
+      <!-- ═══ PANEL 0: INTRO ═══ -->
+      <div class="panel single-col" style="background:#020905;min-height:70vh;align-items:center;justify-items:center" data-idx="0">
+        <div class="panel-border"></div>
+        <div style="text-align:center;padding:3rem 2rem;max-width:700px">
+          <canvas id="c-intro" width="500" height="220" style="display:block;margin:0 auto 1.5rem;image-rendering:pixelated"></canvas>
+          <div style="font-family:var(--font-vt);font-size:clamp(1.2rem,4vw,2rem);color:var(--text-dim);letter-spacing:0.1em;margin-bottom:1rem">
+            FROM NESNF HACKER TO MIT ARCHITECT
+          </div>
+          <div style="font-size:0.82rem;color:var(--text);line-height:1.9;max-width:500px;margin:0 auto">
+            Indonesia, 2014. A 14-year-old discovers the internet has no walls.<br>
+            Indonesia, 2025. That same person is rebuilding it — for 270 million people.
+          </div>
+          <div style="margin-top:1.5rem;font-size:0.7rem;color:var(--text-dim);animation:blink 1.5s step-end infinite">
+            ▶ swipe right or press → to begin
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 1: 2014 NESNF ═══ -->
+      <div class="panel" style="background:#030208" data-idx="1">
+        <div class="panel-border" style="border-color:#ff404066"></div>
+        <div class="illus-side" style="background:#020106">
+          <canvas id="c-hacker" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+          <div class="speech-bubble" style="top:1.5rem;right:1.5rem">
+            > whoami<br>
+            marchel@nesnf<br>
+            > sudo ./probe.sh<br>
+            [CONNECTED]
+          </div>
+        </div>
+        <div class="text-side">
+          <div class="panel-num-badge" style="color:var(--red);border-color:var(--red)">// 001 · 2014</div>
+          <div class="panel-year-title" style="color:var(--red)">The Underground</div>
+          <div class="panel-chapter-sub">ACT I: THE HACKER</div>
+          <div class="panel-narrative">
+            Marchel was <em style="color:var(--red)">14 years old</em> when he co-founded
+            <strong style="color:var(--red)">NESNF Team</strong> — a cybersecurity collective
+            operating deep in Indonesia's digital underground.
+            <br><br>
+            DDoS simulations. Defacement countermeasures.
+            Red team ops. Blue team defense.
+            <strong style="color:var(--text-bright)">He learned by doing.</strong>
+            <br><br>
+            Not destruction — but understanding. Every system he
+            probed taught him something about how the world was
+            built, and how fragile it could be.
+          </div>
+          <div class="panel-pull-quote" style="color:var(--red);border-color:var(--red)">
+            "The best defenders were once the best attackers."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge badge-red">Cybersecurity</span>
+            <span class="badge badge-red">Red Team</span>
+            <span class="badge badge-red">2014–2017</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 2: 2017 HUMANIST ═══ -->
+      <div class="panel" style="background:#020805" data-idx="2">
+        <div class="panel-border" style="border-color:#00e5ff66"></div>
+        <div class="text-side" style="order:2">
+          <div class="panel-num-badge" style="color:var(--cyan);border-color:var(--cyan)">// 002 · 2017–2020</div>
+          <div class="panel-year-title" style="color:var(--cyan)">The Humanist</div>
+          <div class="panel-chapter-sub">ACT II: THE COMMUNITY BUILDER</div>
+          <div class="panel-narrative">
+            He stepped away from the keyboard —
+            and into communities.
+            <em style="color:var(--cyan)">Forum Anak.</em>
+            Youth organizations. Social movements
+            stretching across the archipelago.
+            <br><br>
+            For three years, Marchel learned something
+            no terminal could teach:
+            <strong style="color:var(--text-bright)">how people think, feel, and need.</strong>
+            <br><br>
+            This chapter would quietly define everything
+            that came after — AI built not for machines,
+            but for <em style="color:var(--cyan)">humans. Culture. Language.
+            The forgotten voices of a nation.</em>
+          </div>
+          <div class="panel-pull-quote" style="color:var(--cyan);border-color:var(--cyan)">
+            "Technology without empathy is just noise."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge badge-cyan">Forum Anak</span>
+            <span class="badge badge-cyan">Community</span>
+            <span class="badge badge-cyan">Leadership</span>
+          </div>
+        </div>
+        <div class="illus-side" style="background:#010503;order:1">
+          <canvas id="c-social" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 3: 2021 NVIDIA ═══ -->
+      <div class="panel" style="background:#030205" data-idx="3">
+        <div class="panel-border" style="border-color:#cc88ff66"></div>
+        <div class="illus-side" style="background:#020103">
+          <canvas id="c-nvidia" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+          <div class="speech-bubble" style="bottom:2rem;left:1.5rem;border-color:#cc88ff">
+            NVIDIA × UGM<br>
+            Deep Learning<br>
+            for Healthcare<br>
+            <span style="color:#cc88ff">[ACCEPTED]</span>
+          </div>
+        </div>
+        <div class="text-side">
+          <div class="panel-num-badge" style="color:#cc88ff;border-color:#cc88ff">// 003 · 2021</div>
+          <div class="panel-year-title" style="color:#cc88ff">The Spark</div>
+          <div class="panel-chapter-sub">THE PIVOT TO AI</div>
+          <div class="panel-narrative">
+            A scholarship changed everything.
+            <em style="color:#cc88ff">NVIDIA × UGM Deep Learning for Healthcare</em> —
+            one of the most competitive programs in Indonesia.
+            <br><br>
+            Marchel's first serious AI project:
+            <strong style="color:var(--text-bright)">DVH & Radiomic optimization from IMRT</strong>
+            using neural networks. Medical imaging. Real patients.
+            Real stakes.
+            <br><br>
+            The hacker's instinct for systems, fused with the
+            humanist's care for people, now channeled into
+            <em style="color:#cc88ff">machine intelligence.</em>
+          </div>
+          <div class="panel-pull-quote" style="color:#cc88ff;border-color:#cc88ff">
+            "Best Student — ML/AI Week GDSC 2021."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">NVIDIA</span>
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">Deep Learning</span>
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">Medical AI</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 4: 2022 ZAGREB ═══ -->
+      <div class="panel" style="background:#020508" data-idx="4">
+        <div class="panel-border" style="border-color:#00e5ff66"></div>
+        <div class="text-side">
+          <div class="panel-num-badge" style="color:var(--cyan);border-color:var(--cyan)">// 004 · 2022</div>
+          <div class="panel-year-title" style="color:var(--cyan)">The World Opens</div>
+          <div class="panel-chapter-sub">ERASMUS+ · ZAGREB · GOING GLOBAL</div>
+          <div class="panel-narrative">
+            <em style="color:var(--cyan)">1 in 250.</em> The acceptance rate for
+            the ERASMUS+ exchange to the
+            <strong style="color:var(--text-bright)">University of Zagreb, Croatia.</strong>
+            <br><br>
+            Marchel got in. He competed at
+            <em style="color:var(--cyan)">AI Battleground Croatia</em> as a finalist.
+            Published at the <em style="color:var(--cyan)">UNSD International
+            Conference on Big Data.</em>
+            <br><br>
+            The kid from Yogyakarta was presenting research
+            to the world. Three continents. One year.
+            <strong style="color:var(--text-bright)">No ceiling.</strong>
+          </div>
+          <div class="panel-pull-quote" style="color:var(--cyan);border-color:var(--cyan)">
+            "Finalist — AI Battleground Croatia, 2022."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge badge-cyan">ERASMUS+</span>
+            <span class="badge badge-cyan">1:250 Rate</span>
+            <span class="badge badge-cyan">Zagreb</span>
+          </div>
+        </div>
+        <div class="illus-side" style="background:#010305">
+          <canvas id="c-zagreb" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 5: 2023 MIT ═══ -->
+      <div class="panel" style="background:#050208" data-idx="5">
+        <div class="panel-border" style="border-color:#cc88ff66"></div>
+        <div class="illus-side" style="background:#030106">
+          <canvas id="c-mit" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+          <div class="speech-bubble" style="top:1.5rem;left:50%;transform:translateX(-50%);border-color:#cc88ff;text-align:center">
+            MIT HACKING MEDICINE<br>
+            <span style="color:#cc88ff">2nd PLACE</span><br>
+            Upstream: Pharma & Biotech
+          </div>
+        </div>
+        <div class="text-side">
+          <div class="panel-num-badge" style="color:#cc88ff;border-color:#cc88ff">// 005 · 2023</div>
+          <div class="panel-year-title" style="color:#cc88ff">The Recognition</div>
+          <div class="panel-chapter-sub">MIT STAGE · THE WORLD LISTENS</div>
+          <div class="panel-narrative">
+            <em style="color:#cc88ff">MIT Hacking Medicine.</em> The most prestigious
+            medical hackathon on the planet.
+            Marchel's team placed <strong style="color:var(--text-bright)">2nd in Upstream:
+            Pharma & Biotech.</strong>
+            <br><br>
+            His <em style="color:#cc88ff">BIOBOT Framework</em> — ML-driven drug
+            recommendation in a multilingual environment —
+            caught the attention of global researchers.
+            <br><br>
+            X Corp called. Kalbe Farma wanted him.
+            <strong style="color:var(--text-bright)">The world was beginning to see
+            what Yogyakarta had built.</strong>
+          </div>
+          <div class="panel-pull-quote" style="color:#cc88ff;border-color:#cc88ff">
+            "Winner — 3M Presentation at ICPAPS 8th International."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">MIT</span>
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">2nd Place</span>
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">X Corp</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 6: 2024 BUILDER ═══ -->
+      <div class="panel" style="background:#020805" data-idx="6">
+        <div class="panel-border" style="border-color:#00ff4166"></div>
+        <div class="text-side">
+          <div class="panel-num-badge" style="color:var(--green);border-color:var(--green)">// 006 · 2024</div>
+          <div class="panel-year-title" style="color:var(--green)">He Built a Nation's AI</div>
+          <div class="panel-chapter-sub">ACT III: THE BUILDER · DATA SORCERERS</div>
+          <div class="panel-narrative">
+            Marchel founded <em style="color:var(--green)">PT. Data Sorcerers Indonesia</em>
+            and began the mission he had been preparing for
+            his entire life.
+            <br><br>
+            <strong style="color:var(--green)">ARUNA 7B.</strong> Indonesia's foundation language model.
+            <strong style="color:var(--green)">DIALEKTA 2B.</strong> 21 dialects. One model.
+            <strong style="color:var(--green)">Arutala Aksara.</strong>
+            <em style="color:var(--amber)">600,000+ users</em> scanning and
+            translating Nusantara scripts with AI.
+            <br><br>
+            <em style="color:var(--text-bright)">700+ languages. 20+ scripts.
+            One AI architect from Yogyakarta.</em>
+          </div>
+          <div class="panel-pull-quote" style="color:var(--green);border-color:var(--green)">
+            "Every script deserves an AI."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge badge-green">Founder</span>
+            <span class="badge badge-green">ARUNA 7B</span>
+            <span class="badge badge-amber">600K Users</span>
+          </div>
+        </div>
+        <div class="illus-side" style="background:#010503">
+          <canvas id="c-builder" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 7: 2025 MIT PRE-PHD ═══ -->
+      <div class="panel" style="background:#050208" data-idx="7">
+        <div class="panel-border" style="border-color:#cc88ff88"></div>
+        <div class="illus-side" style="background:#030106">
+          <canvas id="c-phd" width="480" height="420" style="image-rendering:pixelated;max-width:100%"></canvas>
+          <div class="illus-scanline"></div>
+        </div>
+        <div class="text-side">
+          <div class="panel-num-badge" style="color:#cc88ff;border-color:#cc88ff">// 007 · 2025</div>
+          <div class="panel-year-title" style="color:#cc88ff">The Summit</div>
+          <div class="panel-chapter-sub">MIT PRE-PHD · $362K GRANT</div>
+          <div class="panel-narrative">
+            Pre-PhD at <strong style="color:#cc88ff">MIT</strong> — Computational Science
+            & Engineering. Computer Vision.
+            Computational Optimization.
+            <br><br>
+            <em style="color:#cc88ff">NVIDIA Inception Program:</em> USD 250K+.
+            <em style="color:#cc88ff">Deep Learning Grant:</em> USD 112K+.
+            <strong style="color:var(--amber)">$362,000+</strong> invested in
+            Marchel's vision for Indonesian AI.
+            <br><br>
+            MANDALA presented to PT. KAI.
+            28 seminars. 5 judges. Hundreds of mentees.
+            <strong style="color:var(--text-bright)">One mission unchanged.</strong>
+          </div>
+          <div class="panel-pull-quote" style="color:#cc88ff;border-color:#cc88ff">
+            "4th Place — MIT REAP Regional Entrepreneurship 2025."
+          </div>
+          <div class="panel-tags-row">
+            <span class="badge" style="color:#cc88ff;border-color:#cc88ff55">MIT Pre-PhD</span>
+            <span class="badge badge-amber">$362K</span>
+            <span class="badge badge-green">NVIDIA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PANEL 8: ENDING ═══ -->
+      <div class="panel single-col" style="background:#020905;align-items:center;justify-items:center" data-idx="8">
+        <div class="panel-border"></div>
+        <div style="max-width:760px;padding:2.5rem 2rem;text-align:center">
+          <canvas id="c-ending" width="600" height="180" style="display:block;margin:0 auto 1.5rem;image-rendering:pixelated;max-width:100%"></canvas>
+          <div style="font-family:var(--font-vt);font-size:clamp(1.5rem,5vw,2.5rem);color:var(--green);text-shadow:var(--glow-g);margin-bottom:0.5rem">
+            The Story Continues...
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1.5rem">
+            700+ languages still need AI. 20+ scripts still need a voice.<br>
+            Marchel Shevchenko is still building.
+          </div>
+          <div class="ending-grid" style="max-width:600px;margin:0 auto 1.5rem">
+            <div class="ending-stat"><div class="n" style="color:var(--green)">11</div><div class="l">YEARS</div></div>
+            <div class="ending-stat"><div class="n" style="color:var(--amber)">600K+</div><div class="l">USERS</div></div>
+            <div class="ending-stat"><div class="n" style="color:#cc88ff">$362K</div><div class="l">GRANTS</div></div>
+            <div class="ending-stat"><div class="n" style="color:var(--cyan)">17</div><div class="l">PROJECTS</div></div>
+            <div class="ending-stat"><div class="n" style="color:var(--amber)">28+</div><div class="l">SEMINARS</div></div>
+            <div class="ending-stat"><div class="n" style="color:var(--green)">∞</div><div class="l">TO BUILD</div></div>
+          </div>
+          <div style="display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap">
+            <a href="about.html" class="btn btn-primary">READ MORE →</a>
+            <a href="projects.html" class="btn btn-ghost">SEE PROJECTS</a>
+            <a href="contact.html" class="btn btn-amber">COLLABORATE</a>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /comic-track -->
+  </div><!-- /track-outer -->
+
+  <!-- Bottom controls -->
+  <div class="comic-bottom">
+    <div class="prog-dots" id="prog-dots"></div>
+    <div class="comic-nav-row">
+      <button class="nav-btn" id="btn-prev" onclick="goPanel(-1)" disabled>◀ PREV</button>
+      <span class="panel-counter" id="panel-counter">1 / 9</span>
+      <button class="nav-btn primary" id="btn-next" onclick="goPanel(1)">NEXT ▶</button>
+    </div>
+  </div>
+
+</div><!-- /comic-wrap -->
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Navbar.render();
+  Footer.render();
+  CRT.init({ clockId: 'nav-clock' });
+  Terminal.init();
+  initComic();
+  drawAllIllustrations();
+});
+
+/* ════════════════════════════════
+   COMIC ENGINE
+════════════════════════════════ */
+function initComic() {
+  const track   = document.getElementById('comic-track');
+  const panels  = document.querySelectorAll('.panel');
+  const dots    = document.getElementById('prog-dots');
+  const counter = document.getElementById('panel-counter');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  let cur = 0;
+  const total = panels.length;
+
+  panels.forEach((_,i) => {
+    const d = document.createElement('div');
+    d.className = 'prog-dot' + (i===0?' active':'');
+    d.onclick = () => goTo(i);
+    dots.appendChild(d);
+  });
+
+  window.goTo = idx => {
+    cur = Math.max(0, Math.min(total-1, idx));
+    track.style.transform = `translateX(-${cur*100}vw)`;
+    document.querySelectorAll('.prog-dot').forEach((d,i) => d.classList.toggle('active', i===cur));
+    counter.textContent = `${cur+1} / ${total}`;
+    btnPrev.disabled = cur === 0;
+    btnNext.disabled = cur === total-1;
+    btnNext.className = 'nav-btn' + (cur < total-1 ? ' primary' : '');
+  };
+  window.goPanel = d => goTo(cur+d);
+
+  document.addEventListener('keydown', e => {
+    if (e.key==='ArrowRight') goPanel(1);
+    if (e.key==='ArrowLeft')  goPanel(-1);
+  });
+
+  let sx=0, drag=false;
+  const outer = document.getElementById('track-outer');
+  outer.addEventListener('mousedown',  e => { sx=e.clientX; drag=true; });
+  outer.addEventListener('mouseup',    e => { if(!drag)return; drag=false; const d=sx-e.clientX; if(Math.abs(d)>60) goPanel(d>0?1:-1); });
+  outer.addEventListener('mouseleave', ()=> drag=false);
+  outer.addEventListener('touchstart', e => { sx=e.touches[0].clientX; }, {passive:true});
+  outer.addEventListener('touchend',   e => { const d=sx-e.changedTouches[0].clientX; if(Math.abs(d)>50) goPanel(d>0?1:-1); });
+}
+
+/* ════════════════════════════════
+   PIXEL ART ILLUSTRATIONS
+════════════════════════════════ */
+function px(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x*4, y*4, (w||1)*4, (h||1)*4);
+}
+
+function drawPerson(ctx, ox, oy, skinColor, bodyColor, scale=4) {
+  const s = scale;
+  // head
+  ctx.fillStyle = skinColor;
+  ctx.fillRect((ox+3)*s, (oy)*s, 6*s, 6*s);
+  // eyes
+  ctx.fillStyle = '#000';
+  ctx.fillRect((ox+4)*s, (oy+2)*s, 1*s, 1*s);
+  ctx.fillRect((ox+7)*s, (oy+2)*s, 1*s, 1*s);
+  // body
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect((ox+2)*s, (oy+6)*s, 8*s, 7*s);
+  // legs
+  ctx.fillRect((ox+2)*s, (oy+13)*s, 3*s, 5*s);
+  ctx.fillRect((ox+7)*s, (oy+13)*s, 3*s, 5*s);
+  // arms
+  ctx.fillRect((ox+0)*s, (oy+7)*s, 2*s, 5*s);
+  ctx.fillRect((ox+10)*s, (oy+7)*s, 2*s, 5*s);
+}
+
+function drawScreen(ctx, ox, oy, w, h, bgColor, textColor, lines, s=4) {
+  // screen body
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(ox*s, oy*s, w*s, h*s);
+  // screen bg
+  ctx.fillStyle = bgColor;
+  ctx.fillRect((ox+1)*s, (oy+1)*s, (w-2)*s, (h-2)*s);
+  // text lines
+  ctx.fillStyle = textColor;
+  ctx.font = `${s*1.5}px 'Share Tech Mono', monospace`;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, (ox+1.5)*s, (oy+3+i*2.5)*s);
+  });
+}
+
+function glow(ctx, x, y, r, color) {
+  const g = ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0, color);
+  g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+}
+
+/* ── INTRO CANVAS ── */
+function drawIntro() {
+  const c = document.getElementById('c-intro'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+
+  // Dark bg
+  ctx.fillStyle = '#020905'; ctx.fillRect(0,0,W,H);
+
+  // Glowing title text
+  ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 20;
+  ctx.fillStyle = '#00ff41';
+  ctx.font = "bold 48px 'VT323', monospace";
+  ctx.textAlign = 'center';
+  ctx.fillText('MARCHEL', W/2, 80);
+  ctx.font = "bold 28px 'VT323', monospace";
+  ctx.fillStyle = '#ffb300';
+  ctx.shadowColor = '#ffb300';
+  ctx.fillText('SHEVCHENKO', W/2, 120);
+  ctx.shadowBlur = 0;
+
+  // Arc labels
+  const arcs = [
+    {label:'HACKER', color:'#ff4040', x: W*0.2},
+    {label:'HUMANIST', color:'#00e5ff', x: W*0.5},
+    {label:'BUILDER', color:'#00ff41', x: W*0.8},
+  ];
+  arcs.forEach(a => {
+    ctx.fillStyle = a.color + '22';
+    ctx.fillRect(a.x - 55, 140, 110, 28);
+    ctx.strokeStyle = a.color + '88';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(a.x - 55, 140, 110, 28);
+    ctx.fillStyle = a.color;
+    ctx.font = "13px 'Share Tech Mono', monospace";
+    ctx.fillText(a.label, a.x, 159);
+  });
+  // Arrows between
+  ctx.strokeStyle = '#3d8048'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W*0.32, 154); ctx.lineTo(W*0.42, 154); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W*0.6, 154); ctx.lineTo(W*0.7, 154); ctx.stroke();
+  ctx.textAlign = 'left';
+}
+
+/* ── HACKER CANVAS ── */
+function drawHacker() {
+  const c = document.getElementById('c-hacker'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#020106'; ctx.fillRect(0,0,W,H);
+
+  // Green matrix rain in bg
+  ctx.font = '10px Share Tech Mono';
+  const matrixChars = 'ꦲꦤꦕꦫꦏ01';
+  for(let i=0;i<40;i++) {
+    const alpha = 0.05 + Math.random()*0.1;
+    ctx.fillStyle = `rgba(255,64,64,${alpha})`;
+    ctx.fillText(matrixChars[Math.floor(Math.random()*matrixChars.length)],
+      Math.random()*W, Math.random()*H);
+  }
+
+  // Desk
+  ctx.fillStyle = '#1a0a0a';
+  ctx.fillRect(40, H*0.65, W-80, 20);
+
+  // Monitor
+  ctx.fillStyle = '#0d0505';
+  ctx.fillRect(W/2-80, H*0.3, 160, 120);
+  ctx.fillStyle = '#1a0000';
+  ctx.fillRect(W/2-72, H*0.35, 144, 100);
+  // Monitor glow
+  ctx.shadowColor = '#ff4040'; ctx.shadowBlur = 15;
+  ctx.strokeStyle = '#ff404066'; ctx.lineWidth = 2;
+  ctx.strokeRect(W/2-72, H*0.35, 144, 100);
+  ctx.shadowBlur = 0;
+
+  // Screen text
+  ctx.fillStyle = '#ff4040';
+  ctx.font = "11px 'Share Tech Mono', monospace";
+  const lines = ['> whoami', 'marchel@nesnf', '> ls targets/', '[3 files]', '> ./probe.sh', 'CONNECTED...'];
+  lines.forEach((l,i) => ctx.fillText(l, W/2-68, H*0.35+18+i*15));
+
+  // Cursor blink
+  ctx.fillStyle = '#ff4040';
+  ctx.fillRect(W/2-68, H*0.35+16+lines.length*15, 8, 2);
+
+  // Person (young Marchel)
+  drawPerson(ctx, W/2-60, H*0.42, '#d4956a', '#330011', 3.5);
+
+  // Keyboard
+  ctx.fillStyle = '#1a0808';
+  ctx.fillRect(W/2-60, H*0.67, 120, 16);
+  for(let k=0;k<10;k++) {
+    ctx.fillStyle = '#2a1010';
+    ctx.fillRect(W/2-55+k*12, H*0.669, 10, 12);
+  }
+
+  // Red glow atmosphere
+  ctx.fillStyle = 'rgba(255,64,64,0.04)';
+  ctx.fillRect(0,0,W,H);
+
+  // Label
+  ctx.fillStyle = '#ff404088';
+  ctx.font = "bold 14px 'VT323', monospace";
+  ctx.textAlign = 'right';
+  ctx.fillText('YOGYAKARTA, 2014', W-20, H-15);
+  ctx.textAlign = 'left';
+}
+
+/* ── SOCIAL CANVAS ── */
+function drawSocial() {
+  const c = document.getElementById('c-social'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#010503'; ctx.fillRect(0,0,W,H);
+
+  // Sky / outdoor
+  for(let i=0;i<H;i++) {
+    const alpha = i/H*0.3;
+    ctx.fillStyle = `rgba(0,229,255,${alpha*0.15})`;
+    ctx.fillRect(0,i,W,1);
+  }
+
+  // Ground
+  ctx.fillStyle = '#071a0c';
+  ctx.fillRect(0, H*0.72, W, H*0.28);
+
+  // Trees
+  const trees = [30, 80, W-80, W-30];
+  trees.forEach(tx => {
+    ctx.fillStyle = '#003d10';
+    ctx.fillRect(tx-8, H*0.45, 16, H*0.28);
+    ctx.fillStyle = '#00a82b';
+    ctx.beginPath();
+    ctx.arc(tx, H*0.42, 22, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Banner
+  ctx.fillStyle = '#00e5ff22';
+  ctx.fillRect(W/2-110, H*0.12, 220, 40);
+  ctx.strokeStyle = '#00e5ff88'; ctx.lineWidth=1;
+  ctx.strokeRect(W/2-110, H*0.12, 220, 40);
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = "bold 14px 'VT323', monospace";
+  ctx.textAlign='center';
+  ctx.fillText('FORUM ANAK INDONESIA', W/2, H*0.12+26);
+
+  // Group of people
+  const people = [
+    {x:W/2-90, color:'#2244aa'},
+    {x:W/2-50, color:'#1a6622'},
+    {x:W/2-10, color:'#aa2244'},  // Marchel center
+    {x:W/2+30, color:'#226688'},
+    {x:W/2+70, color:'#884422'},
+  ];
+  people.forEach((p,i) => {
+    const skin = i===2 ? '#d4956a' : '#c4855a';
+    drawPerson(ctx, p.x, H*0.45, skin, p.color, 3);
+  });
+
+  // Connection lines between people
+  ctx.strokeStyle = '#00e5ff44'; ctx.lineWidth=1;
+  people.forEach((p,i) => {
+    if(i<people.length-1) {
+      ctx.beginPath();
+      ctx.moveTo(p.x*3+18, H*0.5+18);
+      ctx.lineTo(people[i+1].x*3+18, H*0.5+18);
+      ctx.stroke();
+    }
+  });
+
+  // Speech bubbles
+  const msgs = ['听', '✓', '♡', '★'];
+  people.forEach((p,i) => {
+    if(i===2) return;
+    ctx.fillStyle = '#00e5ff22';
+    ctx.fillRect(p.x*3+5, H*0.38, 28, 18);
+    ctx.fillStyle = '#00e5ff';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(msgs[i>2?i-1:i], p.x*3+10, H*0.38+13);
+  });
+
+  ctx.fillStyle = '#00e5ff88';
+  ctx.font = "bold 14px 'VT323', monospace";
+  ctx.fillText('2017–2020', W/2, H-15);
+  ctx.textAlign='left';
+}
+
+/* ── NVIDIA CANVAS ── */
+function drawNvidia() {
+  const c = document.getElementById('c-nvidia'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#020103'; ctx.fillRect(0,0,W,H);
+
+  // GPU chip visualization
+  const gpuX=W/2-80, gpuY=H*0.12, gpuW=160, gpuH=120;
+  ctx.fillStyle = '#0d0020';
+  ctx.fillRect(gpuX, gpuY, gpuW, gpuH);
+  ctx.strokeStyle = '#cc88ff';
+  ctx.lineWidth=2;
+  ctx.strokeRect(gpuX, gpuY, gpuW, gpuH);
+
+  // GPU grid
+  ctx.strokeStyle = '#cc88ff44'; ctx.lineWidth=1;
+  for(let gx=gpuX+20; gx<gpuX+gpuW; gx+=20) {
+    ctx.beginPath(); ctx.moveTo(gx, gpuY); ctx.lineTo(gx, gpuY+gpuH); ctx.stroke();
+  }
+  for(let gy=gpuY+20; gy<gpuY+gpuH; gy+=20) {
+    ctx.beginPath(); ctx.moveTo(gpuX, gy); ctx.lineTo(gpuX+gpuW, gy); ctx.stroke();
+  }
+  // GPU cores glow
+  ctx.shadowColor='#cc88ff'; ctx.shadowBlur=8;
+  ctx.fillStyle='#cc88ff';
+  for(let gxi=0;gxi<6;gxi++) for(let gyi=0;gyi<4;gyi++) {
+    ctx.fillRect(gpuX+15+gxi*22, gpuY+18+gyi*22, 8, 8);
+  }
+  ctx.shadowBlur=0;
+
+  // NVIDIA label
+  ctx.fillStyle = '#cc88ff';
+  ctx.font = "bold 18px 'VT323', monospace";
+  ctx.textAlign='center';
+  ctx.fillText('NVIDIA × UGM', W/2, gpuY+gpuH+25);
+  ctx.font = "12px 'Share Tech Mono', monospace";
+  ctx.fillStyle = '#cc88ff88';
+  ctx.fillText('Deep Learning for Healthcare', W/2, gpuY+gpuH+45);
+
+  // Neural network lines
+  const layers = [[W*0.15], [W*0.35,W*0.45], [W*0.55,W*0.6,W*0.65], [W*0.8]];
+  const nodeY = H*0.68;
+  ctx.strokeStyle='#cc88ff33'; ctx.lineWidth=1;
+  layers.forEach((layer,li) => {
+    if(li===layers.length-1) return;
+    layer.forEach(lx => {
+      layers[li+1].forEach(rx => {
+        ctx.beginPath(); ctx.moveTo(lx,nodeY); ctx.lineTo(rx,nodeY); ctx.stroke();
+      });
+    });
+  });
+  ctx.fillStyle='#cc88ff88';
+  layers.flat().forEach(nx => {
+    ctx.beginPath(); ctx.arc(nx,nodeY,5,0,Math.PI*2); ctx.fill();
+  });
+
+  // Person
+  drawPerson(ctx, W/2-6, H*0.76, '#d4956a', '#220044', 3.5);
+
+  ctx.fillStyle='#cc88ff66';
+  ctx.font="bold 14px 'VT323', monospace";
+  ctx.fillText('2021 — THE PIVOT', W/2, H-15);
+  ctx.textAlign='left';
+}
+
+/* ── ZAGREB CANVAS ── */
+function drawZagreb() {
+  const c = document.getElementById('c-zagreb'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#010305'; ctx.fillRect(0,0,W,H);
+
+  // Stars
+  for(let i=0;i<60;i++) {
+    ctx.fillStyle=`rgba(0,229,255,${0.1+Math.random()*0.4})`;
+    ctx.fillRect(Math.random()*W, Math.random()*H*0.5, 1.5, 1.5);
+  }
+
+  // World map dots (simplified)
+  const cities = [
+    {name:'YOGYAKARTA', x:W*0.75, y:H*0.58, color:'#00ff41'},
+    {name:'ZAGREB', x:W*0.42, y:H*0.3, color:'#00e5ff'},
+    {name:'KUALA LUMPUR', x:W*0.7, y:H*0.52, color:'#ffb300'},
+  ];
+
+  // Connection lines
+  ctx.setLineDash([4,4]);
+  cities.forEach((city,i) => {
+    if(i===0) return;
+    ctx.strokeStyle = city.color + '66'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(cities[0].x, cities[0].y);
+    // Curved arc
+    const mx=(cities[0].x+city.x)/2, my=Math.min(cities[0].y,city.y)-60;
+    ctx.quadraticCurveTo(mx, my, city.x, city.y);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  // City dots
+  cities.forEach(city => {
+    ctx.shadowColor=city.color; ctx.shadowBlur=10;
+    ctx.fillStyle=city.color;
+    ctx.beginPath(); ctx.arc(city.x, city.y, 6, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle=city.color+'88';
+    ctx.font="10px 'Share Tech Mono', monospace";
+    ctx.textAlign='center';
+    ctx.fillText(city.name, city.x, city.y-12);
+  });
+
+  // Plane icon
+  ctx.fillStyle='#00e5ff';
+  ctx.font='20px sans-serif';
+  ctx.fillText('✈', W*0.55, H*0.38);
+
+  // ERASMUS badge
+  ctx.fillStyle='#00e5ff22';
+  ctx.fillRect(W/2-80, H*0.72, 160, 50);
+  ctx.strokeStyle='#00e5ff88'; ctx.lineWidth=1;
+  ctx.strokeRect(W/2-80, H*0.72, 160, 50);
+  ctx.fillStyle='#00e5ff';
+  ctx.font="bold 16px 'VT323', monospace";
+  ctx.textAlign='center';
+  ctx.fillText('ERASMUS+', W/2, H*0.72+20);
+  ctx.font="11px 'Share Tech Mono', monospace";
+  ctx.fillStyle='#00e5ff88';
+  ctx.fillText('1 : 250 acceptance rate', W/2, H*0.72+38);
+
+  ctx.textAlign='left';
+}
+
+/* ── MIT CANVAS ── */
+function drawMIT() {
+  const c = document.getElementById('c-mit'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#030106'; ctx.fillRect(0,0,W,H);
+
+  // MIT building (simple pixel art)
+  ctx.fillStyle = '#150030';
+  ctx.fillRect(W/2-100, H*0.25, 200, H*0.45);
+  // Columns
+  for(let col=0; col<5; col++) {
+    ctx.fillStyle='#200040';
+    ctx.fillRect(W/2-90+col*42, H*0.28, 16, H*0.4);
+  }
+  // Dome
+  ctx.fillStyle='#300060';
+  ctx.beginPath();
+  ctx.arc(W/2, H*0.25, 60, Math.PI, 0);
+  ctx.fill();
+  ctx.strokeStyle='#cc88ff88'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(W/2, H*0.25, 60, Math.PI, 0); ctx.stroke();
+
+  // MIT glow
+  ctx.shadowColor='#cc88ff'; ctx.shadowBlur=30;
+  ctx.strokeStyle='#cc88ff44'; ctx.lineWidth=3;
+  ctx.strokeRect(W/2-100, H*0.25, 200, H*0.45);
+  ctx.shadowBlur=0;
+
+  // MIT text
+  ctx.fillStyle='#cc88ff';
+  ctx.font="bold 32px 'VT323', monospace";
+  ctx.textAlign='center';
+  ctx.shadowColor='#cc88ff'; ctx.shadowBlur=15;
+  ctx.fillText('MIT', W/2, H*0.25-15);
+  ctx.shadowBlur=0;
+
+  // Trophy
+  ctx.fillStyle='#ffb300';
+  ctx.font='24px sans-serif';
+  ctx.fillText('🏆', W/2-12, H*0.78);
+  ctx.font="12px 'Share Tech Mono', monospace";
+  ctx.fillStyle='#ffb30088';
+  ctx.fillText('2nd PLACE', W/2, H*0.85);
+
+  // Person raising hand
+  drawPerson(ctx, W/2-45, H*0.6, '#d4956a', '#220044', 4);
+  // Raised arm
+  ctx.fillStyle='#d4956a';
+  ctx.fillRect((W/2-45+10)*4/4+W/2-45+8, H*0.6+24, 4, 16);
+
+  ctx.textAlign='left';
+}
+
+/* ── BUILDER CANVAS ── */
+function drawBuilder() {
+  const c = document.getElementById('c-builder'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#010503'; ctx.fillRect(0,0,W,H);
+
+  // Network visualization — ARUNA ecosystem
+  const nodes = [
+    {x:W/2, y:H*0.25, label:'ARUNA 7B', color:'#00ff41', r:22},
+    {x:W*0.25, y:H*0.5, label:'DIALEKTA 2B', color:'#ffb300', r:18},
+    {x:W*0.75, y:H*0.5, label:'ARUTALA', color:'#00e5ff', r:18},
+    {x:W*0.15, y:H*0.75, label:'IndoLLNet', color:'#00ff41', r:14},
+    {x:W*0.5, y:H*0.78, label:'Aksara', color:'#ffb300', r:14},
+    {x:W*0.85, y:H*0.75, label:'Dialekta', color:'#00e5ff', r:14},
+  ];
+
+  // Draw edges
+  const edges = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,4]];
+  edges.forEach(([a,b]) => {
+    ctx.strokeStyle = nodes[a].color + '44'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(nodes[a].x, nodes[a].y);
+    ctx.lineTo(nodes[b].x, nodes[b].y); ctx.stroke();
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    ctx.shadowColor=n.color; ctx.shadowBlur=12;
+    ctx.fillStyle=n.color+'33';
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r+6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle=n.color;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#020905';
+    ctx.font=`bold ${n.r*0.7}px 'Share Tech Mono', monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(n.label.split(' ')[0], n.x, n.y);
+    ctx.textBaseline='alphabetic';
+  });
+
+  // 600K label
+  ctx.shadowColor='#ffb300'; ctx.shadowBlur=10;
+  ctx.fillStyle='#ffb300';
+  ctx.font="bold 22px 'VT323', monospace";
+  ctx.textAlign='center';
+  ctx.fillText('600,000+ USERS', W/2, H*0.93);
+  ctx.shadowBlur=0;
+  ctx.textAlign='left';
+}
+
+/* ── PHD CANVAS ── */
+function drawPhD() {
+  const c = document.getElementById('c-phd'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle = '#030106'; ctx.fillRect(0,0,W,H);
+
+  // Stars bg
+  for(let i=0;i<80;i++) {
+    const alpha = 0.2+Math.random()*0.5;
+    ctx.fillStyle=`rgba(204,136,255,${alpha*0.3})`;
+    ctx.fillRect(Math.random()*W, Math.random()*H*0.6, 1.5, 1.5);
+  }
+
+  // Grant amounts floating
+  const grants = [
+    {label:'$250K+', sub:'NVIDIA Inception', x:W*0.2, y:H*0.2, color:'#cc88ff'},
+    {label:'$112K+', sub:'Deep Learning Grant', x:W*0.75, y:H*0.3, color:'#00e5ff'},
+    {label:'$362K+', sub:'TOTAL GRANTS', x:W*0.5, y:H*0.55, color:'#ffb300'},
+  ];
+  grants.forEach(g => {
+    ctx.fillStyle=g.color+'22';
+    const tw = ctx.measureText(g.label).width+20;
+    ctx.fillRect(g.x-tw/2-10, g.y-24, tw+20, 44);
+    ctx.strokeStyle=g.color+'88'; ctx.lineWidth=1;
+    ctx.strokeRect(g.x-tw/2-10, g.y-24, tw+20, 44);
+    ctx.shadowColor=g.color; ctx.shadowBlur=10;
+    ctx.fillStyle=g.color;
+    ctx.font=`bold 22px 'VT323', monospace`;
+    ctx.textAlign='center';
+    ctx.fillText(g.label, g.x, g.y);
+    ctx.shadowBlur=0;
+    ctx.fillStyle=g.color+'88';
+    ctx.font=`10px 'Share Tech Mono', monospace`;
+    ctx.fillText(g.sub, g.x, g.y+14);
+  });
+
+  // MIT badge
+  ctx.fillStyle='#cc88ff33';
+  ctx.fillRect(W/2-80, H*0.72, 160, 50);
+  ctx.strokeStyle='#cc88ff'; ctx.lineWidth=2;
+  ctx.strokeRect(W/2-80, H*0.72, 160, 50);
+  ctx.fillStyle='#cc88ff';
+  ctx.font="bold 18px 'VT323', monospace";
+  ctx.fillText('MIT PRE-PHD', W/2, H*0.72+22);
+  ctx.font="11px 'Share Tech Mono', monospace";
+  ctx.fillStyle='#cc88ff88';
+  ctx.fillText('Comp. Science & Engineering', W/2, H*0.72+40);
+
+  ctx.textAlign='left';
+}
+
+/* ── ENDING CANVAS ── */
+function drawEnding() {
+  const c = document.getElementById('c-ending'); if(!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height;
+  ctx.fillStyle='#020905'; ctx.fillRect(0,0,W,H);
+
+  // Timeline line
+  ctx.strokeStyle='#155a28'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(40, H/2); ctx.lineTo(W-40, H/2); ctx.stroke();
+
+  // Timeline nodes
+  const years=[
+    {y:'2014',label:'NESNF',color:'#ff4040'},
+    {y:'2017',label:'Forum Anak',color:'#00e5ff'},
+    {y:'2021',label:'NVIDIA',color:'#cc88ff'},
+    {y:'2022',label:'Zagreb',color:'#00e5ff'},
+    {y:'2023',label:'MIT Hack',color:'#cc88ff'},
+    {y:'2024',label:'Sorcerers',color:'#00ff41'},
+    {y:'2025',label:'MIT PhD',color:'#cc88ff'},
+    {y:'...',label:'∞',color:'#ffb300'},
+  ];
+
+  years.forEach((item,i) => {
+    const x = 40 + (i/(years.length-1))*(W-80);
+    // Node
+    ctx.shadowColor=item.color; ctx.shadowBlur=8;
+    ctx.fillStyle=item.color;
+    ctx.beginPath(); ctx.arc(x, H/2, 6, 0, Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    // Year label
+    ctx.fillStyle=item.color+'cc';
+    ctx.font=`10px 'Share Tech Mono', monospace`;
+    ctx.textAlign='center';
+    ctx.fillText(item.y, x, i%2===0 ? H/2-16 : H/2+24);
+    ctx.fillStyle=item.color+'88';
+    ctx.font=`9px 'Share Tech Mono', monospace`;
+    ctx.fillText(item.label, x, i%2===0 ? H/2-26 : H/2+34);
+  });
+  ctx.textAlign='left';
+}
+
+function drawAllIllustrations() {
+  drawIntro();
+  drawHacker();
+  drawSocial();
+  drawNvidia();
+  drawZagreb();
+  drawMIT();
+  drawBuilder();
+  drawPhD();
+  drawEnding();
+}
+</script>
+</body>
+</html>

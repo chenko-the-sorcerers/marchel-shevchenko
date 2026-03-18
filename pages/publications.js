@@ -136,6 +136,8 @@
   
   document.addEventListener('DOMContentLoaded', () => {
     Navbar.render();
+  Terminal.init();
+  Wayang.init();
     Footer.render();
     CRT.init({ clockId: 'nav-clock' });
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));

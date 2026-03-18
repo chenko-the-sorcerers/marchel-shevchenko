@@ -1,6 +1,7 @@
 /* pages/home.js */
 document.addEventListener('DOMContentLoaded', () => {
   Navbar.render();
+  Terminal.init();
   Footer.render();
   CRT.init({ clockId: 'nav-clock' });
   Boot.run(() => requestAnimationFrame(() => requestAnimationFrame(initPage)));

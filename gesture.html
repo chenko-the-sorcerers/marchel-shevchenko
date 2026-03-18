@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gesture Controller — AXION/OS</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>"/>
+  <link rel="stylesheet" href="styles/globals.css"/>
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="components/terminal.js" defer></script>
+  <!-- MediaPipe Hands -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <style>
+    .gesture-wrap {
+      max-width: 1100px; margin: 0 auto;
+      padding: calc(var(--nav-h) + 1.5rem) 1.5rem 5rem;
+    }
+
+    /* ── TOP BAR ── */
+    .g-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.8rem; margin-bottom: 1.2rem;
+    }
+    .g-title { font-family: var(--font-vt); font-size: 1.8rem; color: var(--green); text-shadow: var(--glow-g); }
+    .g-subtitle { font-size: 0.75rem; color: var(--text-dim); }
+
+    /* ── MAIN LAYOUT ── */
+    .g-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1rem;
+    }
+
+    /* ── WEBCAM PANEL ── */
+    .webcam-panel {
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      position: relative;
+      overflow: hidden;
+    }
+    .webcam-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: rgba(5,15,8,0.98);
+      border-bottom: 1px solid var(--border-hi);
+      font-size: 0.72rem;
+    }
+    .webcam-header .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--red); margin-right: 0.4rem;
+      display: inline-block;
+    }
+    .webcam-header .status-dot.active { background: var(--green); animation: blink 1s step-end infinite; }
+    #webcam-canvas {
+      width: 100%; display: block;
+      transform: scaleX(-1); /* mirror */
+      max-height: 400px; object-fit: cover;
+    }
+    .webcam-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(2,9,5,0.92);
+      flex-direction: column; gap: 1rem;
+      font-size: 0.82rem; text-align: center;
+    }
+    .webcam-overlay.hidden { display: none; }
+
+    /* ── GESTURE INDICATOR ── */
+    .gesture-indicator {
+      position: absolute; bottom: 1rem; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(2,9,5,0.88);
+      border: 1px solid var(--border-hi);
+      padding: 0.4rem 1.2rem;
+      font-size: 0.8rem; color: var(--green);
+      text-align: center; min-width: 200px;
+      transition: all 0.2s;
+    }
+    .gesture-indicator.triggered {
+      border-color: var(--green);
+      box-shadow: 0 0 20px rgba(0,255,65,0.4);
+      color: var(--amber);
+    }
+
+    /* ── CONTROL PANEL ── */
+    .control-panel {
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      display: flex; flex-direction: column;
+    }
+    .cp-header {
+      padding: 0.5rem 1rem;
+      background: rgba(5,15,8,0.98);
+      border-bottom: 1px solid var(--border-hi);
+      font-size: 0.65rem; color: var(--text-dim);
+      font-family: var(--font-pixel);
+      letter-spacing: 0.08em;
+    }
+    .cp-body { padding: 1rem; flex: 1; }
+
+    /* Mode tabs */
+    .mode-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+    .mode-tab {
+      flex: 1; padding: 0.4rem;
+      background: var(--bg2); border: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 0.7rem;
+      color: var(--text-dim); cursor: pointer;
+      transition: all 0.15s; text-align: center;
+    }
+    .mode-tab.active { background: rgba(0,255,65,0.1); border-color: var(--green); color: var(--green); }
+
+    /* Gesture map */
+    .gesture-map { margin-bottom: 1rem; }
+    .gesture-map-title { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 0.5rem; letter-spacing: 0.1em; }
+    .gesture-row {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.4rem 0; border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+    }
+    .gesture-row:last-child { border-bottom: none; }
+    .g-hand { font-size: 1.2rem; }
+    .g-arrow { color: var(--text-dim); font-size: 0.8rem; }
+    .g-action { color: var(--green); flex: 1; }
+    .g-status {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .g-status.lit { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+    /* Log */
+    .gesture-log {
+      background: var(--bg2); border: 1px solid var(--border);
+      padding: 0.5rem; height: 120px; overflow-y: auto;
+      font-size: 0.68rem; color: var(--text-dim);
+    }
+    .gesture-log::-webkit-scrollbar { width: 3px; }
+    .gesture-log::-webkit-scrollbar-thumb { background: var(--green-dark); }
+    .log-entry { margin: 1px 0; }
+    .log-entry.ok { color: var(--green); }
+    .log-entry.nav { color: var(--cyan); }
+    .log-entry.game { color: var(--amber); }
+
+    /* ── BOTTOM: MODE DISPLAYS ── */
+    .mode-display {
+      margin-top: 1rem;
+      background: var(--panel); border: 1px solid var(--border-hi);
+      display: none;
+    }
+    .mode-display.active { display: block; }
+    .md-header {
+      padding: 0.5rem 1rem;
+      background: rgba(5,15,8,0.98);
+      border-bottom: 1px solid var(--border-hi);
+      font-size: 0.65rem; color: var(--text-dim);
+      font-family: var(--font-pixel); letter-spacing: 0.08em;
+    }
+    .md-body { padding: 1rem; }
+
+    /* Nav mode */
+    .nav-pages {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+    }
+    .nav-page-btn {
+      padding: 0.4rem 0.8rem;
+      background: var(--bg2); border: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--text-dim); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-page-btn.current {
+      border-color: var(--green); color: var(--green);
+      background: rgba(0,255,65,0.08);
+    }
+    .nav-page-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* Game mode */
+    .rpg-mini {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+    }
+    .rpg-action-btn {
+      padding: 0.5rem;
+      background: var(--bg2); border: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--text-dim); text-align: center;
+      transition: all 0.2s;
+    }
+    .rpg-action-btn.triggered {
+      border-color: var(--amber); color: var(--amber);
+      background: rgba(255,179,0,0.1);
+      box-shadow: 0 0 12px rgba(255,179,0,0.3);
+    }
+
+    /* Start button */
+    .start-btn {
+      font-family: var(--font-pixel); font-size: 0.52rem;
+      padding: 0.8rem 2rem;
+      background: var(--green); color: var(--bg);
+      border: none; cursor: pointer; letter-spacing: 0.05em;
+      transition: all 0.2s; display: block; margin: 0 auto;
+    }
+    .start-btn:hover { box-shadow: 0 0 20px rgba(0,255,65,0.5); }
+
+    /* Confidence bar */
+    .conf-bar {
+      height: 4px; background: var(--bg2);
+      border: 1px solid var(--border); overflow: hidden;
+      margin-top: 0.3rem;
+    }
+    .conf-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--green-dark), var(--green));
+      transition: width 0.1s;
+    }
+
+    @media (max-width: 768px) {
+      .g-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="gesture-wrap">
+
+  <div class="g-topbar">
+    <div>
+      <div class="g-title">◈ GESTURE CONTROLLER</div>
+      <div class="g-subtitle">Computer Vision demo — MediaPipe Hands · Swipe to navigate or control RPG</div>
+    </div>
+    <div style="display:flex;gap:0.6rem;align-items:center">
+      <a href="rpg.html" class="btn btn-ghost" style="font-size:0.6rem">⚔️ RPG</a>
+      <a href="index.html" class="btn btn-amber" style="font-size:0.6rem">← Home</a>
+    </div>
+  </div>
+
+  <div class="g-layout">
+
+    <!-- Webcam -->
+    <div class="webcam-panel">
+      <div class="webcam-header">
+        <span><span class="status-dot" id="cam-dot"></span><span id="cam-status">CAMERA OFFLINE</span></span>
+        <span id="hand-count" style="color:var(--cyan)">Hands: 0</span>
+        <span id="fps-display" style="color:var(--text-dim)">0 FPS</span>
+      </div>
+      <canvas id="webcam-canvas" width="640" height="480"></canvas>
+      <div class="webcam-overlay" id="webcam-overlay">
+        <div style="font-family:var(--font-vt);font-size:2rem;color:var(--green);text-shadow:var(--glow-g)">◈ CAMERA</div>
+        <div style="color:var(--text-dim);font-size:0.8rem">Aktifkan kamera untuk mulai<br>gesture detection</div>
+        <button class="start-btn" id="start-btn" onclick="startCamera()">▶ ACTIVATE CAMERA</button>
+        <div style="font-size:0.65rem;color:var(--text-dim);margin-top:0.5rem">Kamera hanya diproses lokal — tidak dikirim kemana pun</div>
+      </div>
+      <div class="gesture-indicator" id="gesture-indicator">
+        >> Waiting for gesture...
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="control-panel">
+      <div class="cp-header">GESTURE CONFIG</div>
+      <div class="cp-body">
+
+        <!-- Mode tabs -->
+        <div class="mode-tabs">
+          <button class="mode-tab active" onclick="setMode('nav')" id="tab-nav">🗺️ NAVIGATE</button>
+          <button class="mode-tab" onclick="setMode('game')" id="tab-game">⚔️ GAME</button>
+        </div>
+
+        <!-- Gesture map -->
+        <div class="gesture-map">
+          <div class="gesture-map-title">GESTURE MAP</div>
+          <div class="gesture-row">
+            <span class="g-hand">🤚</span>
+            <span style="font-size:1rem">→</span>
+            <span class="g-action" id="g-right-label">Next Page</span>
+            <span class="g-status" id="gs-right"></span>
+          </div>
+          <div class="gesture-row">
+            <span class="g-hand">🤚</span>
+            <span style="font-size:1rem">←</span>
+            <span class="g-action" id="g-left-label">Prev Page</span>
+            <span class="g-status" id="gs-left"></span>
+          </div>
+          <div class="gesture-row">
+            <span class="g-hand">🤚</span>
+            <span style="font-size:1rem">↑</span>
+            <span class="g-action" id="g-up-label">Scroll Up</span>
+            <span class="g-status" id="gs-up"></span>
+          </div>
+          <div class="gesture-row">
+            <span class="g-hand">🤚</span>
+            <span style="font-size:1rem">↓</span>
+            <span class="g-action" id="g-down-label">Scroll Down</span>
+            <span class="g-status" id="gs-down"></span>
+          </div>
+        </div>
+
+        <!-- Confidence -->
+        <div style="font-size:0.65rem;color:var(--text-dim);margin-bottom:0.3rem">DETECTION CONFIDENCE</div>
+        <div class="conf-bar"><div class="conf-fill" id="conf-fill"></div></div>
+        <div style="font-size:0.7rem;color:var(--amber);margin-top:0.2rem" id="conf-val">0%</div>
+
+        <!-- Log -->
+        <div style="font-size:0.65rem;color:var(--text-dim);margin:0.8rem 0 0.3rem">GESTURE LOG</div>
+        <div class="gesture-log" id="gesture-log">
+          <div class="log-entry">[SYS] Gesture controller initialized</div>
+          <div class="log-entry">[SYS] Activate camera to begin</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Nav mode display -->
+  <div class="mode-display" id="mode-nav">
+    <div class="md-header">NAVIGATION MODE — Swipe kanan/kiri untuk pindah halaman</div>
+    <div class="md-body">
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.8rem">Halaman tersedia:</div>
+      <div class="nav-pages" id="nav-pages"></div>
+    </div>
+  </div>
+
+  <!-- Game mode display -->
+  <div class="mode-display active" id="mode-game">
+    <div class="md-header">GAME MODE — Swipe untuk kontrol RPG Nusantara</div>
+    <div class="md-body">
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.8rem">
+        Gesture aktif akan trigger aksi di RPG. Buka <a href="rpg.html" style="color:var(--cyan)">RPG</a> di tab lain.
+      </div>
+      <div class="rpg-mini">
+        <div class="rpg-action-btn" id="btn-up">↑ MOVE UP<br><span style="font-size:0.6rem;color:var(--text-dim)">Swipe atas</span></div>
+        <div class="rpg-action-btn" id="btn-right">→ MOVE RIGHT<br><span style="font-size:0.6rem;color:var(--text-dim)">Swipe kanan</span></div>
+        <div class="rpg-action-btn" id="btn-left">← MOVE LEFT<br><span style="font-size:0.6rem;color:var(--text-dim)">Swipe kiri</span></div>
+        <div class="rpg-action-btn" id="btn-down">↓ MOVE DOWN<br><span style="font-size:0.6rem;color:var(--text-dim)">Swipe bawah</span></div>
+      </div>
+      <div style="margin-top:0.8rem;font-size:0.7rem;color:var(--text-dim)">
+        Tip: Buka RPG di tab lain, gesture controller akan kirim keyboard events via BroadcastChannel.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<video id="input-video" style="display:none" playsinline></video>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Navbar.render();
+  Footer.render();
+  CRT.init({ clockId: 'nav-clock' });
+  Terminal.init();
+  initGestureController();
+});
+
+function initGestureController() {
+  /* ── PAGES ── */
+  const PAGES = [
+    { label: '[HOME]',      href: 'index.html' },
+    { label: '[ABOUT]',     href: 'about.html' },
+    { label: '[PROJECTS]',  href: 'projects.html' },
+    { label: '[SKILLS]',    href: 'skills.html' },
+    { label: '[EXPERIENCE]',href: 'experience.html' },
+    { label: '[TALKS]',     href: 'talks.html' },
+    { label: '[CONTACT]',   href: 'contact.html' },
+    { label: '[CHAT]',      href: 'chat.html' },
+    { label: '[RPG]',       href: 'rpg.html' },
+    { label: '[GAME]',      href: 'game.html' },
+  ];
+
+  let currentPageIdx = 0;
+  let mode = 'game'; // 'nav' | 'game' — default game mode for RPG control
+  let cameraActive = false;
+  let hands = null;
+  let camera = null;
+  let frameCount = 0, lastFpsTime = Date.now();
+  let lastGestureTime = 0;
+  const GESTURE_COOLDOWN = 800; // ms
+
+  /* Swipe tracking */
+  let prevHandX = null, prevHandY = null;
+  let swipeBuffer = [];
+  const SWIPE_FRAMES = 8;
+  const SWIPE_THRESHOLD = 0.08;
+
+  /* BroadcastChannel for RPG control */
+  const channel = new BroadcastChannel('axion-gesture');
+  window._gestureChannel = channel;
+
+  /* ── BUILD NAV PAGES UI ── */
+  const navPagesEl = document.getElementById('nav-pages');
+  PAGES.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'nav-page-btn' + (i === 0 ? ' current' : '');
+    btn.textContent = p.label;
+    btn.dataset.idx = i;
+    btn.onclick = () => {
+      currentPageIdx = i;
+      document.querySelectorAll('.nav-page-btn').forEach(b => b.classList.remove('current'));
+      btn.classList.add('current');
+      addLog(`[NAV] Selected: ${p.label}`, 'nav');
+    };
+    navPagesEl.appendChild(btn);
+  });
+
+  /* ── MODE ── */
+  window.setMode = function(m) {
+    mode = m;
+    document.getElementById('tab-nav').classList.toggle('active', m === 'nav');
+    document.getElementById('tab-game').classList.toggle('active', m === 'game');
+    document.getElementById('mode-nav').classList.toggle('active', m === 'nav');
+    document.getElementById('mode-game').classList.toggle('active', m === 'game');
+
+    if (m === 'nav') {
+      document.getElementById('g-right-label').textContent = 'Next Page';
+      document.getElementById('g-left-label').textContent = 'Prev Page';
+      document.getElementById('g-up-label').textContent = 'Scroll Up';
+      document.getElementById('g-down-label').textContent = 'Scroll Down';
+    } else {
+      document.getElementById('g-right-label').textContent = 'Move Right';
+      document.getElementById('g-left-label').textContent = 'Move Left';
+      document.getElementById('g-up-label').textContent = 'Move Up';
+      document.getElementById('g-down-label').textContent = 'Move Down';
+    }
+    addLog(`[SYS] Mode: ${m.toUpperCase()}`, 'ok');
+  };
+
+  /* ── LOG ── */
+  function addLog(text, type = '') {
+    const log = document.getElementById('gesture-log');
+    const div = document.createElement('div');
+    div.className = 'log-entry ' + type;
+    div.textContent = `${new Date().toTimeString().slice(0,8)} ${text}`;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    // Keep max 50 entries
+    while (log.children.length > 50) log.removeChild(log.firstChild);
+  }
+
+  /* ── GESTURE INDICATOR ── */
+  function showGesture(text, triggered = false) {
+    const el = document.getElementById('gesture-indicator');
+    el.textContent = '>> ' + text;
+    el.classList.toggle('triggered', triggered);
+  }
+
+  /* ── GESTURE STATUS DOTS ── */
+  function lightDot(dir, on) {
+    const el = document.getElementById('gs-' + dir);
+    if (el) el.classList.toggle('lit', on);
+  }
+  function clearDots() {
+    ['left','right','up','down'].forEach(d => lightDot(d, false));
+  }
+
+  /* ── GAME BUTTON FLASH ── */
+  function flashGameBtn(dir) {
+    const el = document.getElementById('btn-' + dir);
+    if (!el) return;
+    el.classList.add('triggered');
+    setTimeout(() => el.classList.remove('triggered'), 400);
+  }
+
+  /* ── EXECUTE GESTURE ACTION ── */
+  function executeGesture(dir) {
+    const now = Date.now();
+    if (now - lastGestureTime < GESTURE_COOLDOWN) return;
+    lastGestureTime = now;
+
+    lightDot(dir, true);
+    setTimeout(() => lightDot(dir, false), 400);
+
+    if (mode === 'nav') {
+      if (dir === 'right') {
+        currentPageIdx = (currentPageIdx + 1) % PAGES.length;
+        const page = PAGES[currentPageIdx];
+        showGesture(`→ Navigate to ${page.label}`, true);
+        addLog(`[NAV] → ${page.label}`, 'nav');
+        document.querySelectorAll('.nav-page-btn').forEach((b, i) => {
+          b.classList.toggle('current', i === currentPageIdx);
+        });
+        setTimeout(() => { window.location.href = page.href; }, 600);
+      } else if (dir === 'left') {
+        currentPageIdx = (currentPageIdx - 1 + PAGES.length) % PAGES.length;
+        const page = PAGES[currentPageIdx];
+        showGesture(`← Navigate to ${page.label}`, true);
+        addLog(`[NAV] ← ${page.label}`, 'nav');
+        document.querySelectorAll('.nav-page-btn').forEach((b, i) => {
+          b.classList.toggle('current', i === currentPageIdx);
+        });
+        setTimeout(() => { window.location.href = page.href; }, 600);
+      } else if (dir === 'up') {
+        window.scrollBy({ top: -300, behavior: 'smooth' });
+        showGesture('↑ Scroll Up', true);
+        addLog('[NAV] ↑ Scroll up', 'nav');
+      } else if (dir === 'down') {
+        window.scrollBy({ top: 300, behavior: 'smooth' });
+        showGesture('↓ Scroll Down', true);
+        addLog('[NAV] ↓ Scroll down', 'nav');
+      }
+    } else {
+      // Game mode - send to RPG via BroadcastChannel
+      const keyMap = { right:'ArrowRight', left:'ArrowLeft', up:'ArrowUp', down:'ArrowDown' };
+      channel.postMessage({ type: 'gesture', key: keyMap[dir] });
+      flashGameBtn(dir);
+      showGesture(`${dir.toUpperCase()} → RPG Control`, true);
+      addLog(`[GAME] ${dir.toUpperCase()} sent to RPG`, 'game');
+    }
+  }
+
+  /* ── MEDIAPIPE HANDS SETUP ── */
+  window.startCamera = async function() {
+    if (cameraActive) return;
+    document.getElementById('start-btn').textContent = 'LOADING...';
+    document.getElementById('start-btn').disabled = true;
+    addLog('[SYS] Loading MediaPipe Hands...', 'ok');
+
+    try {
+      hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.5,
+      });
+      hands.onResults(onResults);
+
+      const video = document.getElementById('input-video');
+      camera = new Camera(video, {
+        onFrame: async () => {
+          await hands.send({ image: video });
+          frameCount++;
+          const now = Date.now();
+          if (now - lastFpsTime >= 1000) {
+            document.getElementById('fps-display').textContent = frameCount + ' FPS';
+            frameCount = 0;
+            lastFpsTime = now;
+          }
+        },
+        width: 640, height: 480,
+      });
+
+      await camera.start();
+      cameraActive = true;
+
+      document.getElementById('webcam-overlay').classList.add('hidden');
+      document.getElementById('cam-dot').classList.add('active');
+      document.getElementById('cam-status').textContent = 'CAMERA ONLINE';
+      addLog('[SYS] Camera active — gesture detection running', 'ok');
+      showGesture('Camera active — show your hand!');
+
+    } catch(err) {
+      addLog('[ERR] ' + err.message, '');
+      document.getElementById('start-btn').textContent = '▶ ACTIVATE CAMERA';
+      document.getElementById('start-btn').disabled = false;
+      showGesture('Error: ' + err.message);
+    }
+  };
+
+  /* ── PROCESS MEDIAPIPE RESULTS ── */
+  function onResults(results) {
+    const canvas = document.getElementById('webcam-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    /* Draw video frame (mirrored) */
+    ctx.scale(-1, 1);
+    ctx.translate(-canvas.width, 0);
+    ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    /* Draw scanline overlay */
+    ctx.globalAlpha = 0.06;
+    ctx.fillStyle = '#000';
+    for (let y = 0; y < canvas.height; y += 4) ctx.fillRect(0, y, canvas.width, 2);
+    ctx.globalAlpha = 1;
+
+    const handCount = results.multiHandLandmarks ? results.multiHandLandmarks.length : 0;
+    document.getElementById('hand-count').textContent = `Hands: ${handCount}`;
+
+    if (!results.multiHandLandmarks || handCount === 0) {
+      clearDots();
+      prevHandX = null; prevHandY = null;
+      swipeBuffer = [];
+      showGesture('No hand detected');
+      document.getElementById('conf-fill').style.width = '0%';
+      document.getElementById('conf-val').textContent = '0%';
+      return;
+    }
+
+    const landmarks = results.multiHandLandmarks[0];
+    const confidence = results.multiHandedness?.[0]?.score || 0;
+
+    /* Update confidence bar */
+    const confPct = Math.round(confidence * 100);
+    document.getElementById('conf-fill').style.width = confPct + '%';
+    document.getElementById('conf-val').textContent = confPct + '%';
+
+    /* Draw hand landmarks */
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.translate(-canvas.width, 0);
+    drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#00ff4155', lineWidth: 2 });
+    drawLandmarks(ctx, landmarks, { color: '#00ff41', lineWidth: 1, radius: 4 });
+    ctx.restore();
+
+    /* Palm center (average of wrist + middle finger base) */
+    const wrist = landmarks[0];
+    const palmX = wrist.x;
+    const palmY = wrist.y;
+
+    /* Add to swipe buffer */
+    swipeBuffer.push({ x: palmX, y: palmY });
+    if (swipeBuffer.length > SWIPE_FRAMES) swipeBuffer.shift();
+
+    /* Calculate swipe direction */
+    if (swipeBuffer.length >= SWIPE_FRAMES) {
+      const first = swipeBuffer[0];
+      const last  = swipeBuffer[swipeBuffer.length - 1];
+      const dx = last.x - first.x;
+      const dy = last.y - first.y;
+      const absDx = Math.abs(dx);
+      const absDy = Math.abs(dy);
+
+      /* Draw trajectory */
+      if (swipeBuffer.length > 1) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.translate(-canvas.width, 0);
+        ctx.beginPath();
+        ctx.strokeStyle = '#ffb30088';
+        ctx.lineWidth = 3;
+        swipeBuffer.forEach((pt, i) => {
+          const px = pt.x * canvas.width;
+          const py = pt.y * canvas.height;
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (absDx > SWIPE_THRESHOLD || absDy > SWIPE_THRESHOLD) {
+        if (absDx > absDy) {
+          const dir = dx > 0 ? 'left' : 'right'; // mirrored
+          showGesture(`${dir === 'right' ? '→' : '←'} Swipe ${dir.toUpperCase()} detected`);
+          if (Math.max(absDx, absDy) > SWIPE_THRESHOLD * 1.5) {
+            executeGesture(dir);
+            swipeBuffer = [];
+          }
+        } else {
+          const dir = dy > 0 ? 'down' : 'up';
+          showGesture(`${dir === 'up' ? '↑' : '↓'} Swipe ${dir.toUpperCase()} detected`);
+          if (Math.max(absDx, absDy) > SWIPE_THRESHOLD * 1.5) {
+            executeGesture(dir);
+            swipeBuffer = [];
+          }
+        }
+      } else {
+        showGesture(`Hand detected — swipe to control`);
+      }
+    }
+
+    /* Draw hand label */
+    const labelX = (1 - palmX) * canvas.width;
+    const labelY = palmY * canvas.height - 20;
+    ctx.fillStyle = 'rgba(2,9,5,0.8)';
+    ctx.fillRect(labelX - 50, labelY - 14, 100, 18);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = "11px 'Share Tech Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText(`HAND DETECTED`, labelX, labelY);
+    ctx.textAlign = 'left';
+  }
+}
+</script>
+</body>
+</html>

@@ -72,7 +72,59 @@
     .ach-org { color: var(--cyan); font-size: 0.75rem; }
 
     @media (max-width: 768px) { .skills-grid { grid-template-columns: 1fr; } }
+
+    /* ── SKILL CHALLENGE ── */
+    #skill-challenge {
+      margin-top: 2.5rem;
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      box-shadow: 0 0 30px rgba(0,255,65,0.07);
+    }
+    .ch-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 1rem;
+      background: rgba(5,15,8,0.98);
+      border-bottom: 1px solid var(--border-hi);
+      font-size: 0.75rem;
+    }
+    .ch-label { font-family: var(--font-pixel); font-size: 0.48rem; color: var(--green); letter-spacing: 0.08em; }
+    .ch-score { color: var(--amber); font-family: var(--font-vt); font-size: 1rem; }
+    .ch-body { padding: 1.2rem; }
+    .ch-q-label { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.6rem; letter-spacing: 0.06em; }
+    .ch-desc {
+      font-size: 0.88rem; color: var(--text-bright);
+      line-height: 1.7; margin-bottom: 0.5rem;
+      border-left: 2px solid var(--green);
+      padding-left: 0.8rem;
+    }
+    .ch-tag { font-size: 0.72rem; color: var(--cyan); margin-bottom: 1rem; }
+    .ch-opts { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.8rem; }
+    .ch-btn {
+      font-family: var(--font-mono); font-size: 0.8rem;
+      padding: 0.4rem 1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .ch-btn:hover { border-color: var(--green); color: var(--green); background: rgba(0,255,65,0.05); }
+    .ch-btn.ch-correct { background: rgba(0,255,65,0.12); border-color: var(--green); color: var(--green); }
+    .ch-btn.ch-wrong   { background: rgba(255,64,64,0.1);  border-color: var(--red);   color: var(--red); }
+    .ch-feedback { font-size: 0.82rem; min-height: 1.4rem; }
+    .ch-footer {
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--text-dim);
+    }
+    @media (max-width: 480px) {
+      .ch-btn { font-size: 0.72rem; padding: 0.35rem 0.7rem; }
+      .ch-desc { font-size: 0.8rem; }
+    }
+
   </style>
+  <script src="components/terminal.js" defer></script>
+  <script src="components/wayang.js" defer></script>
 </head>
 <body>
   <div class="page-wrap">
@@ -114,6 +166,15 @@
       <div class="t-card-header"><div class="t-card-dot"></div>ACHIEVEMENTS.LOG</div>
       <div class="t-card-body" id="ach-list"></div>
     </div>
+
+
+    <!-- Skill Challenge -->
+    <div class="section-header reveal" style="margin-top:2.5rem;">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">run ./skill_challenge</span>
+      <span class="sh-args">--interactive</span>
+    </div>
+    <div id="skill-challenge" class="reveal"></div>
 
   </div>
 </body>

@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>404 — PAGE NOT FOUND // AXION/OS</title>
+  <title>404 — KERNEL PANIC // AXION/OS</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
   <link rel="stylesheet" href="styles/globals.css" />
   <script src="lib/cv-data.js" defer></script>
   <script src="components/crt.js" defer></script>
   <script src="components/navbar.js" defer></script>
   <script src="components/footer.js" defer></script>
+  <script src="components/terminal.js" defer></script>
   <style>
     .err-wrap {
       min-height: 100vh;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: calc(var(--nav-h) + 2rem) 2rem 4rem;
-      text-align: center;
+      padding: calc(var(--nav-h) + 2rem) 1.5rem 6rem;
     }
     .err-code {
       font-family: var(--font-vt);
-      font-size: clamp(6rem, 20vw, 14rem);
+      font-size: clamp(5rem, 18vw, 11rem);
       color: var(--green); text-shadow: var(--glow-g);
       line-height: 1;
       animation: glitch-big 3s infinite;
@@ -32,51 +32,334 @@
       93% { text-shadow: var(--glow-g); transform: none; }
     }
     .err-title {
-      font-family: var(--font-pixel); font-size: 0.65rem;
+      font-family: var(--font-pixel); font-size: 0.52rem;
       color: var(--amber); text-shadow: var(--glow-a);
-      letter-spacing: 0.1em; margin: 0.5rem 0 1.5rem;
+      letter-spacing: 0.08em; margin: 0.5rem 0 1.5rem;
+      text-align: center;
     }
-    .err-terminal {
-      background: var(--panel); border: 1px solid var(--border-hi);
-      padding: 1.2rem 1.8rem; max-width: 500px; width: 100%;
-      text-align: left; margin-bottom: 2rem;
+    #game-wrap {
+      width: 100%; max-width: 640px;
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      box-shadow: 0 0 40px rgba(0,255,65,0.1);
     }
-    .err-log { font-size: 0.82rem; line-height: 2; color: var(--text-dim); }
-    .err-log .ok   { color: var(--green); }
-    .err-log .err  { color: var(--red); }
-    .err-log .warn { color: var(--amber); }
-    .err-btns { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    #game-header {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 1rem;
+      background: rgba(5,15,8,0.98);
+      border-bottom: 1px solid var(--border-hi);
+      font-size: 0.75rem; color: var(--text-dim);
+    }
+    #game-header .dot { width:9px;height:9px;border-radius:50%; }
+    #game-body {
+      height: 320px; overflow-y: auto;
+      padding: 1rem;
+      font-size: 0.8rem; line-height: 1.85;
+      white-space: pre-wrap;
+    }
+    #game-body::-webkit-scrollbar { width: 3px; }
+    #game-body::-webkit-scrollbar-thumb { background: var(--green-dark); }
+    #game-input-row {
+      display: flex; align-items: center;
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--border);
+      background: rgba(2,9,5,0.98);
+    }
+    #game-prompt { color: var(--green); white-space: nowrap; margin-right: 0.4rem; font-size: 0.8rem; }
+    #game-input {
+      flex:1; background:transparent; border:none; outline:none;
+      color: var(--green); font-family: var(--font-mono); font-size: 0.8rem;
+      caret-color: var(--green);
+    }
+    #game-input::placeholder { color: var(--text-dim); }
+    .g-out  { color: var(--text); }
+    .g-ok   { color: var(--green); }
+    .g-warn { color: var(--amber); }
+    .g-err  { color: var(--red); }
+    .g-cyan { color: var(--cyan); }
+    .g-user { color: var(--amber); }
+    .g-title { color: var(--green); text-shadow: var(--glow-g); font-family: var(--font-vt); font-size: 1.15rem; }
+    .err-hint { margin-top: 1rem; font-size: 0.72rem; color: var(--text-dim); text-align: center; }
+    .err-hint a { color: var(--cyan); }
+    @media (max-width: 480px) { #game-body { height: 260px; font-size: 0.72rem; } }
   </style>
+  <script src="components/wayang.js" defer></script>
 </head>
 <body>
   <div class="err-wrap">
     <div class="err-code">404</div>
-    <div class="err-title">// KERNEL PANIC — PAGE_NOT_FOUND</div>
+    <div class="err-title">// KERNEL PANIC — PAGE_NOT_FOUND // PLAY A GAME WHILE YOU'RE HERE</div>
 
-    <div class="err-terminal">
-      <div class="err-log">
-        <span class="err">[ERR]  Segfault at address: <span id="err-path"></span></span>
-        <span class="warn">[WARN] Requested node does not exist in filesystem</span>
-        <span class="warn">[WARN] Memory dump: 0x00000000 0x00000000</span>
-        <span class="ok">[SYS]  Core systems intact — returning to safe mode</span>
-        <span class="ok">[SYS]  Operator: MARCHEL SHEVCHENKO — ONLINE</span>
+    <div id="game-wrap">
+      <div id="game-header">
+        <span class="dot" style="background:#ff5f57"></span>
+        <span class="dot" style="background:#febc2e"></span>
+        <span class="dot" style="background:#28c840"></span>
+        <span style="margin-left:0.5rem">AXION/OS — ADVENTURE MODE v1.0</span>
+        <span style="margin-left:auto" id="game-score-display">SCORE: 0</span>
+      </div>
+      <div id="game-body"></div>
+      <div id="game-input-row">
+        <span id="game-prompt">axion@lost:~$&nbsp;</span>
+        <input id="game-input" type="text" autocomplete="off" spellcheck="false" placeholder="type a command..." />
       </div>
     </div>
 
-    <div class="err-btns">
-      <a href="index.html" class="btn btn-primary">↩ RETURN TO HOME</a>
-      <a href="projects.html" class="btn btn-ghost">VIEW PROJECTS</a>
-      <a href="chat.html" class="btn btn-amber">ASK AXION</a>
+    <div class="err-hint">
+      Lost? Try: <code style="color:var(--green)">help</code> &nbsp;|&nbsp;
+      <a href="index.html">Return Home</a> &nbsp;|&nbsp;
+      <a href="chat.html">Ask AXION</a>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      Navbar.render();
-      Footer.render();
-      CRT.init({ clockId: 'nav-clock' });
-      document.getElementById('err-path').textContent = location.pathname;
+  document.addEventListener('DOMContentLoaded', () => {
+    Navbar.render();
+    Footer.render();
+    CRT.init({ clockId: 'nav-clock' });
+    Terminal.init();
+    initGame();
+  });
+
+  function initGame() {
+    const body    = document.getElementById('game-body');
+    const inputEl = document.getElementById('game-input');
+    const scoreEl = document.getElementById('game-score-display');
+    let score = 0, cmdHistory = [], histIdx = -1;
+    let foundItems = new Set();
+    let currentRoom = 'lost';
+
+    const ROOMS = {
+      lost: {
+        name: 'THE VOID',
+        desc: 'You float in digital darkness.\nError 404 echoes around you. The page you sought does not exist.\nBut a faint green glow pulses to the NORTH...',
+        exits: { north:'lobby', n:'lobby' }, items: [],
+      },
+      lobby: {
+        name: 'AXION LOBBY',
+        desc: 'A glowing terminal hub. Holographic text: "SYS://MARCHEL — ONLINE"\nDoors: EAST=Lab, WEST=Archives, NORTH=Tower.\nA blinking cursor pulses on the floor.',
+        exits: { east:'lab',e:'lab', west:'archives',w:'archives', north:'tower',n:'tower', south:'lost',s:'lost' },
+        items: ['cursor'],
+      },
+      lab: {
+        name: 'AI RESEARCH LAB',
+        desc: 'Servers hum. Screens show neural net training.\nWhiteboard: "ARUNA 7B — Layer 32 attention heads optimized."\nFiles on desk: ARUNA_7B.bin, DIALEKTA_2B.bin\nA hidden crawlspace leads NORTH.',
+        exits: { south:'lobby',s:'lobby', north:'crawlspace',n:'crawlspace' },
+        items: ['ARUNA_7B.bin','DIALEKTA_2B.bin','whiteboard'],
+      },
+      archives: {
+        name: 'NUSANTARA ARCHIVES',
+        desc: 'Ancient scripts glow: Hanacaraka, Batak, Lontara — all digitized.\nShelf: IndoLLNet_v2.1.model, Arutala_Aksara.apk\nWhispers in 700+ languages. Exit EAST.',
+        exits: { east:'lobby',e:'lobby' },
+        items: ['IndoLLNet_v2.1.model','Arutala_Aksara.apk','scroll'],
+      },
+      tower: {
+        name: 'MIT TOWER',
+        desc: 'A spire of academic achievement. Diplomas line the walls.\nA locked door is to the EAST. Stairs DOWN to lobby.',
+        exits: { south:'lobby',s:'lobby', down:'lobby' },
+        items: ['telescope','diploma'],
+        locked: { east:'vault' },
+      },
+      crawlspace: {
+        name: 'SECRET CRAWLSPACE',
+        desc: 'Tight passage between server racks.\nSticky note: "NVIDIA grant: $362K+. Don\'t tell anyone. ;)"\nUSB drive: SECRET_PROJECTS.zip',
+        exits: { south:'lab',s:'lab' },
+        items: ['SECRET_PROJECTS.zip','sticky_note'],
+        secret: true,
+      },
+      vault: {
+        name: 'ACHIEVEMENT VAULT',
+        desc: 'UNLOCKED! Trophies gleam: MIT REAP, NVIDIA Inception, Garuda Hacks...\nAll 13 achievements on display. You feel inspired.',
+        exits: { west:'tower',w:'tower' },
+        items: ['trophy'],
+        onEnter: () => addScore(100, 'Achievement Vault bonus'),
+      },
+    };
+
+    const ITEMS = {
+      'cursor':               { pts:10,  info:'A blinking cursor. "Ready for input."' },
+      'ARUNA_7B.bin':         { pts:20,  info:'ARUNA 7B — 7B param foundation model for Indonesian language.' },
+      'DIALEKTA_2B.bin':      { pts:20,  info:'DIALEKTA 2B — covers 21 Indonesian dialects.' },
+      'whiteboard':           { pts:15,  info:'Marchel\'s notes: "SABDA algorithm — cultural context > raw perplexity."' },
+      'IndoLLNet_v2.1.model': { pts:20,  info:'CNN-OCR recognizing 20+ Nusantara handwritten scripts.' },
+      'Arutala_Aksara.apk':   { pts:25,  info:'Scan & translate Nusantara scripts. 600K+ users!' },
+      'scroll':               { pts:15,  info:'"Every script deserves an AI." — Marchel\'s core mission.' },
+      'telescope':            { pts:10,  info:'You see the future: AI for culture, healthcare, language.' },
+      'diploma':              { pts:15,  info:'4 degrees: UTY, UniKL, Zagreb (ERASMUS+), MIT. Each a door.' },
+      'SECRET_PROJECTS.zip':  { pts:50,  info:'MANDALA, SABDARANA, Neural Soundscapes — always more building.' },
+      'sticky_note':          { pts:10,  info:'NVIDIA $362K+ total: Inception $250K + DL Grant $112K.' },
+      'trophy':               { pts:30,  info:'MIT REAP, NVIDIA Inception, Garuda Hacks, ERASMUS+...' },
+    };
+
+    let vaultUnlocked = false;
+
+    function addScore(n, reason) {
+      score += n;
+      scoreEl.textContent = 'SCORE: ' + score;
+    }
+
+    function p(text, cls) {
+      const d = document.createElement('div');
+      d.className = cls || 'g-out';
+      d.textContent = text;
+      body.appendChild(d);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function sep() { p('─'.repeat(50), 'g-warn'); }
+
+    function descRoom(id) {
+      const r = ROOMS[id];
+      p('');
+      p('◈ ' + r.name, 'g-title');
+      sep();
+      p(r.desc);
+      const remaining = r.items.filter(i => !foundItems.has(id+':'+i));
+      if (remaining.length) p('Items: ' + remaining.join(', '), 'g-cyan');
+      const exits = Object.keys(r.exits).filter(k => k.length > 1);
+      const locked = r.locked ? Object.keys(r.locked).filter(k=>k.length>1) : [];
+      p('Exits: ' + exits.join(', ') + (locked.length ? ' | Locked: ' + locked.join(', ') : ''), 'g-warn');
+      if (r.secret && !foundItems.has('__secret')) {
+        foundItems.add('__secret');
+        addScore(30);
+        p('[SECRET FOUND] +30 pts!', 'g-ok');
+      }
+      if (r.onEnter && !foundItems.has('__vault_bonus')) {
+        foundItems.add('__vault_bonus');
+        r.onEnter();
+      }
+    }
+
+    function cmd(raw) {
+      const val = raw.trim();
+      if (!val) return;
+      cmdHistory.unshift(val); histIdx = -1;
+      p('axion@lost:~$ ' + val, 'g-user');
+      const parts = val.toLowerCase().split(/\s+/);
+      const c = parts[0], args = parts.slice(1).join(' ');
+      const room = ROOMS[currentRoom];
+
+      if (c === 'help' || c === '?') {
+        p('\nCommands: look, go [dir], examine [item], take [item],\ninventory, score, hint, map, home, clear\nShortcuts: n s e w', 'g-cyan');
+        return;
+      }
+      if (c === 'look' || c === 'l' || c === 'ls') { descRoom(currentRoom); return; }
+      if (c === 'score') {
+        const pct = Math.round(score/420*100);
+        p('[SCORE] ' + score + ' / 420 pts (' + pct + '%)', 'g-ok');
+        if (pct < 30) p('Tip: explore and take items!', 'g-warn');
+        else if (pct < 70) p('Keep going! Find the secret vault.', 'g-warn');
+        else p('Amazing explorer!', 'g-ok');
+        return;
+      }
+      if (c === 'inventory' || c === 'inv' || c === 'i') {
+        const col = [...foundItems].filter(k => k.includes(':'));
+        if (!col.length) { p('[INV] Empty. Take items to collect them!', 'g-warn'); return; }
+        p('[INV] Collected:', 'g-cyan');
+        col.forEach(k => p('  ◆ ' + k.split(':')[1], 'g-ok'));
+        return;
+      }
+      if (c === 'map') {
+        p('\n       [MIT TOWER]\n            |\n[ARCHIVES]-[LOBBY]-[LAB]-[CRAWLSPACE*]\n            |\n         [VOID]\n* = secret  You are: ' + room.name, 'g-cyan');
+        return;
+      }
+      if (c === 'hint') {
+        const hints = [
+          'Go north from the lobby to find the Tower.',
+          'There is a secret crawlspace north of the Lab.',
+          'The Tower vault needs a password — Marchel\'s company name.',
+          '"data sorcerers" might open some doors...',
+          'Use "examine" to learn about items before taking them.',
+        ];
+        p('[HINT] ' + hints[Math.floor(Math.random()*hints.length)], 'g-warn');
+        return;
+      }
+      if (c === 'home' || c === 'exit' || c === 'quit') {
+        p('[SYS] Returning to homepage...', 'g-ok');
+        setTimeout(() => { window.location.href = 'index.html'; }, 600);
+        return;
+      }
+      if (c === 'clear' || c === 'cls') { body.innerHTML = ''; return; }
+
+      // Movement
+      const dir = c === 'go' ? args : (['north','south','east','west','up','down','n','s','e','w'].includes(c) ? c : null);
+      if (dir) {
+        if (room.locked && room.locked[dir] && !vaultUnlocked) {
+          p('[LOCKED] A keypad glows. Enter the password:', 'g-warn');
+          p('Hint: What is the name of Marchel\'s company?', 'g-cyan');
+          return;
+        }
+        const dest = room.exits[dir] || (vaultUnlocked && room.locked && room.locked[dir]);
+        if (dest) { currentRoom = dest; descRoom(dest); }
+        else p('[WARN] Cannot go ' + dir + ' from here.', 'g-err');
+        return;
+      }
+
+      // Examine
+      if (c === 'examine' || c === 'ex' || c === 'inspect' || c === 'read') {
+        const found = room.items.find(i => i.toLowerCase().includes(args) || args.includes(i.toLowerCase().replace(/\.[^.]+$/,'')));
+        if (found && ITEMS[found]) {
+          p('[EXAMINE] ' + found + ':', 'g-cyan');
+          p(ITEMS[found].info);
+        } else p('[WARN] Nothing to examine: "' + args + '". Items: ' + room.items.join(', '), 'g-err');
+        return;
+      }
+
+      // Take
+      if (c === 'take' || c === 'get' || c === 'grab') {
+        const found = room.items.find(i => i.toLowerCase().includes(args) || args.includes(i.toLowerCase().replace(/\.[^.]+$/,'')));
+        const uid = currentRoom + ':' + found;
+        if (found && !foundItems.has(uid)) {
+          foundItems.add(uid);
+          const pts = ITEMS[found] ? ITEMS[found].pts : 10;
+          addScore(pts);
+          p('[TAKE] ' + found + ' collected! +' + pts + ' pts', 'g-ok');
+          if (ITEMS[found]) p(ITEMS[found].info, 'g-out');
+        } else if (foundItems.has(uid)) {
+          p('[INFO] Already collected: ' + found, 'g-warn');
+        } else {
+          p('[WARN] No item "' + args + '" here. Items: ' + room.items.join(', '), 'g-err');
+        }
+        return;
+      }
+
+      // Password unlock
+      const lower = val.toLowerCase();
+      if (lower.includes('data sorcerers') || lower.includes('sorcerers') || lower === 'pt data sorcerers indonesia') {
+        if (!vaultUnlocked) {
+          vaultUnlocked = true;
+          addScore(50);
+          p('[ACCESS GRANTED] The vault door unlocks! +50 pts', 'g-ok');
+          p('[SYS] Go EAST from the Tower to enter the Achievement Vault.', 'g-cyan');
+          if (ROOMS.tower.exits) ROOMS.tower.exits.east = 'vault';
+        } else {
+          p('[SYS] Vault already unlocked.', 'g-warn');
+        }
+        return;
+      }
+
+      p('[AXION] Unknown: "' + val + '". Type "help".', 'g-err');
+    }
+
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { cmd(inputEl.value); inputEl.value = ''; }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (histIdx < cmdHistory.length-1) { histIdx++; inputEl.value = cmdHistory[histIdx]||''; } }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); if (histIdx>0){histIdx--;inputEl.value=cmdHistory[histIdx]||'';}else{histIdx=-1;inputEl.value='';} }
     });
+
+    // Boot
+    setTimeout(() => {
+      p('AXION/OS ADVENTURE MODE v1.0', 'g-title');
+      sep();
+      p('[ERROR] 404 — Page not found.', 'g-err');
+      p('[SYS]  But while you are here — explore Marchel\'s world!', 'g-warn');
+      p('[INFO] Find hidden files, solve puzzles, earn score.', 'g-out');
+      p('[TIP]  Type "help" to start. Type "look" to look around.', 'g-cyan');
+      sep();
+      setTimeout(() => descRoom('lost'), 400);
+      inputEl.focus();
+    }, 200);
+  }
   </script>
 </body>
 </html>

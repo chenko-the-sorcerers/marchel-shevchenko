@@ -7,7 +7,7 @@ This repository contains the personal portfolio website for Marchel Shevchenko, 
 *   **Comprehensive Portfolio:** Detailed sections on experience, projects, publications, and skills.
 *   **AI-focused Content:** Highlights contributions to AI for culture, language, and the future of Indonesia.
 *   **Responsive Design:** Optimized for various devices.
-*   **Interactive Elements:** Includes audio and CRT-like effects for an engaging user experience.
+*   **Interactive Elements:** Includes audio, CRT-like effects, games (`game.html`, `rpg.html`), gesture recognition (`gesture.html`), and a terminal interface (`terminal.js`) for an engaging user experience.
 
 ## Technologies Used
 

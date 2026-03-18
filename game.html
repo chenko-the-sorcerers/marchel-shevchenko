@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neural Network Builder — AXION/OS</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="lib/cv-data.js" defer></script>
+  <script src="components/crt.js" defer></script>
+  <script src="components/navbar.js" defer></script>
+  <script src="components/footer.js" defer></script>
+  <script src="components/terminal.js" defer></script>
+  <style>
+    .game-wrap {
+      max-width: 1100px; margin: 0 auto;
+      padding: calc(var(--nav-h) + 2rem) 1.5rem 6rem;
+    }
+
+    /* ── TOP BAR ── */
+    .game-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .game-title { font-family: var(--font-vt); font-size: 1.8rem; color: var(--green); text-shadow: var(--glow-g); }
+    .game-stats { display: flex; gap: 1.2rem; align-items: center; }
+    .stat-box {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 0.3rem 0.8rem; font-size: 0.75rem; text-align: center;
+    }
+    .stat-box .sv { font-family: var(--font-vt); font-size: 1.2rem; color: var(--amber); }
+    .stat-box .sk { color: var(--text-dim); font-size: 0.65rem; }
+
+    /* ── CHALLENGE CARD ── */
+    .challenge-card {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 1rem 1.2rem; margin-bottom: 1.2rem;
+      display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+    }
+    .ch-info { flex: 1; min-width: 200px; }
+    .ch-name { font-family: var(--font-vt); font-size: 1.3rem; color: var(--amber); margin-bottom: 0.3rem; }
+    .ch-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; }
+    .ch-target {
+      background: var(--bg2); border: 1px solid var(--border);
+      padding: 0.5rem 0.8rem; font-size: 0.75rem; min-width: 180px;
+    }
+    .ch-target-lbl { color: var(--text-dim); margin-bottom: 0.3rem; font-size: 0.68rem; }
+    .target-item { color: var(--green); margin: 0.15rem 0; }
+    .target-item.met { color: var(--green); }
+    .target-item.unmet { color: var(--red); }
+    .target-item::before { content: '◆ '; }
+
+    /* ── MAIN LAYOUT ── */
+    .builder-layout {
+      display: grid;
+      grid-template-columns: 160px 1fr 200px;
+      gap: 1rem;
+      min-height: 420px;
+    }
+
+    /* ── LAYER PALETTE ── */
+    .palette {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 0.8rem;
+    }
+    .palette-title { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.1em; margin-bottom: 0.6rem; font-family: var(--font-pixel); }
+    .layer-chip {
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      padding: 0.45rem 0.6rem; margin-bottom: 0.4rem;
+      font-size: 0.75rem; cursor: grab;
+      display: flex; align-items: center; gap: 0.4rem;
+      transition: all 0.15s; user-select: none;
+    }
+    .layer-chip:hover { border-color: var(--green); color: var(--green); transform: translateX(2px); }
+    .layer-chip:active { cursor: grabbing; }
+    .layer-chip .lc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .layer-chip .lc-name { font-size: 0.73rem; }
+    .layer-chip .lc-desc { font-size: 0.6rem; color: var(--text-dim); }
+
+    /* ── CANVAS ── */
+    .nn-canvas {
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .canvas-header {
+      padding: 0.5rem 1rem; border-bottom: 1px solid var(--border);
+      font-size: 0.7rem; color: var(--text-dim);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .canvas-inner {
+      flex: 1; padding: 1rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+      overflow-y: auto; min-height: 340px;
+    }
+    .canvas-inner.drag-over { background: rgba(0,255,65,0.03); border: 1px dashed var(--green); }
+    .canvas-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--text-dim); font-size: 0.8rem; text-align: center;
+      border: 2px dashed var(--border); margin: 1rem; padding: 2rem;
+      pointer-events: none;
+    }
+
+    /* ── PLACED LAYER ── */
+    .placed-layer {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 0.5rem 0.8rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      animation: layerIn 0.2s ease;
+      position: relative;
+    }
+    @keyframes layerIn {
+      from { opacity:0; transform: translateY(-8px); }
+      to   { opacity:1; transform: none; }
+    }
+    .placed-layer:hover { border-color: var(--border-hi); }
+    .pl-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pl-name { font-size: 0.8rem; color: var(--text-bright); flex: 1; }
+    .pl-param {
+      font-size: 0.7rem; color: var(--text-dim);
+      background: var(--bg2); border: 1px solid var(--border);
+      padding: 0.1rem 0.4rem;
+    }
+    .pl-remove {
+      background: none; border: none; color: var(--red);
+      font-size: 0.9rem; cursor: pointer; padding: 0 0.2rem;
+      opacity: 0.5; transition: opacity 0.15s;
+    }
+    .pl-remove:hover { opacity: 1; }
+    .layer-connector {
+      width: 2px; height: 10px; background: var(--border-hi);
+      margin: 0 auto; position: relative;
+    }
+    .layer-connector::after {
+      content: '▼'; position: absolute; bottom: -8px; left: -4px;
+      color: var(--border-hi); font-size: 0.55rem;
+    }
+
+    /* ── METRICS PANEL ── */
+    .metrics {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem;
+    }
+    .metrics-title { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.1em; font-family: var(--font-pixel); }
+    .metric-row { font-size: 0.78rem; }
+    .metric-lbl { color: var(--text-dim); font-size: 0.68rem; margin-bottom: 0.15rem; }
+    .metric-bar { height: 6px; background: var(--bg2); border: 1px solid var(--border); overflow: hidden; }
+    .metric-fill { height: 100%; transition: width 0.5s ease; }
+    .metric-val { font-family: var(--font-vt); font-size: 1rem; color: var(--amber); }
+
+    .train-btn {
+      margin-top: auto; width: 100%;
+      font-family: var(--font-pixel); font-size: 0.48rem;
+      padding: 0.6rem; background: var(--green); color: var(--bg);
+      border: none; cursor: pointer; letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+    .train-btn:hover { box-shadow: 0 0 20px rgba(0,255,65,0.5); }
+    .train-btn:disabled { background: var(--border-hi); color: var(--text-dim); cursor: not-allowed; box-shadow: none; }
+
+    .result-panel {
+      margin-top: 0.8rem; padding: 0.8rem;
+      background: var(--bg2); border: 1px solid var(--border);
+      font-size: 0.8rem; display: none;
+    }
+    .result-panel.show { display: block; }
+    .result-ok   { color: var(--green); }
+    .result-fail { color: var(--red); }
+    .result-warn { color: var(--amber); }
+
+    /* ── TRAINING ANIMATION ── */
+    .training-bar {
+      height: 4px; background: var(--bg2); border: 1px solid var(--border);
+      overflow: hidden; margin: 0.4rem 0;
+    }
+    .training-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--green-dark), var(--green));
+      box-shadow: 0 0 8px var(--green);
+      transition: width 0.1s linear;
+    }
+
+    /* ── NEXT/SCORE ── */
+    .bottom-bar {
+      margin-top: 1rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.8rem;
+    }
+    .score-display {
+      font-family: var(--font-vt); font-size: 1.4rem;
+      color: var(--green); text-shadow: var(--glow-g);
+    }
+
+    @media (max-width: 768px) {
+      .builder-layout { grid-template-columns: 1fr; }
+      .metrics { flex-direction: row; flex-wrap: wrap; }
+      .train-btn { margin-top: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap">
+
+    <div class="game-topbar">
+      <div>
+        <div class="game-title">◈ NEURAL NETWORK BUILDER</div>
+        <div style="font-size:0.72rem;color:var(--text-dim)">Build AI architectures. Match the target. Train. Score.</div>
+      </div>
+      <div class="game-stats">
+        <div class="stat-box"><div class="sv" id="gs-score">0</div><div class="sk">SCORE</div></div>
+        <div class="stat-box"><div class="sv" id="gs-level">1</div><div class="sk">LEVEL</div></div>
+        <div class="stat-box"><div class="sv" id="gs-streak">0</div><div class="sk">STREAK</div></div>
+      </div>
+    </div>
+
+    <!-- Challenge -->
+    <div class="challenge-card" id="challenge-card"></div>
+
+    <!-- Builder -->
+    <div class="builder-layout">
+      <!-- Palette -->
+      <div class="palette">
+        <div class="palette-title">LAYER PALETTE</div>
+        <div id="layer-palette"></div>
+      </div>
+
+      <!-- Canvas -->
+      <div class="nn-canvas">
+        <div class="canvas-header">
+          <span>ARCHITECTURE CANVAS</span>
+          <button onclick="clearCanvas()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-mono);font-size:0.68rem;padding:0.15rem 0.5rem;cursor:pointer">CLEAR</button>
+        </div>
+        <div class="canvas-inner" id="canvas-inner">
+          <div class="canvas-empty" id="canvas-empty">
+            Drag layers here<br>to build your network
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics">
+        <div class="metrics-title">LIVE METRICS</div>
+        <div class="metric-row">
+          <div class="metric-lbl">DEPTH</div>
+          <div class="metric-bar"><div class="metric-fill" id="m-depth" style="background:var(--green);width:0%"></div></div>
+          <div class="metric-val" id="mv-depth">0</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-lbl">PARAMS</div>
+          <div class="metric-bar"><div class="metric-fill" id="m-params" style="background:var(--amber);width:0%"></div></div>
+          <div class="metric-val" id="mv-params">0</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-lbl">REGULARIZATION</div>
+          <div class="metric-bar"><div class="metric-fill" id="m-reg" style="background:var(--cyan);width:0%"></div></div>
+          <div class="metric-val" id="mv-reg">0%</div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-lbl">COMPLEXITY SCORE</div>
+          <div class="metric-val" id="mv-complex" style="color:var(--green)">—</div>
+        </div>
+
+        <div class="training-bar"><div class="training-fill" id="train-bar"></div></div>
+        <div style="font-size:0.68rem;color:var(--text-dim)" id="train-log">Waiting for architecture...</div>
+
+        <button class="train-btn" id="train-btn" onclick="trainNetwork()" disabled>
+          ▶ TRAIN MODEL
+        </button>
+
+        <div class="result-panel" id="result-panel"></div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div>
+        <span class="score-display">SCORE: <span id="total-score">0</span></span>
+      </div>
+      <div style="display:flex;gap:0.6rem">
+        <button class="btn btn-ghost" onclick="skipChallenge()">SKIP →</button>
+        <a href="skills.html" class="btn btn-amber">BACK TO SKILLS</a>
+        <a href="404.html" class="btn btn-ghost">404 ADVENTURE</a>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  Navbar.render();
+  Footer.render();
+  CRT.init({ clockId: 'nav-clock' });
+  Terminal.init();
+  initGame();
+});
+
+/* ══════════════════════════════════════════════════════
+   NEURAL NETWORK BUILDER GAME
+   - Drag layers from palette onto canvas
+   - Match challenge requirements (layer types, depth, etc.)
+   - Hit TRAIN to simulate and get score
+══════════════════════════════════════════════════════ */
+
+const LAYER_TYPES = [
+  { id:'conv',    name:'Conv2D',      color:'#00ff41', desc:'Feature extraction', params:64,  reg:0  },
+  { id:'pool',    name:'MaxPool',     color:'#00a82b', desc:'Downsampling',       params:0,   reg:5  },
+  { id:'dense',   name:'Dense',       color:'#ffb300', desc:'Fully connected',    params:128, reg:0  },
+  { id:'dropout', name:'Dropout',     color:'#00e5ff', desc:'Regularization',     params:0,   reg:20 },
+  { id:'lstm',    name:'LSTM',        color:'#cc88ff', desc:'Sequence modeling',  params:256, reg:0  },
+  { id:'embed',   name:'Embedding',   color:'#ff8800', desc:'Token embedding',    params:96,  reg:0  },
+  { id:'norm',    name:'BatchNorm',   color:'#00e5ff', desc:'Normalization',      params:0,   reg:10 },
+  { id:'relu',    name:'ReLU',        color:'#ff4040', desc:'Activation',         params:0,   reg:0  },
+  { id:'softmax', name:'Softmax',     color:'#ffb300', desc:'Output activation',  params:0,   reg:0  },
+  { id:'attn',    name:'Attention',   color:'#cc88ff', desc:'Self-attention',     params:512, reg:0  },
+  { id:'flatten', name:'Flatten',     color:'#3d8048', desc:'Shape transform',    params:0,   reg:0  },
+  { id:'gru',     name:'GRU',         color:'#cc88ff', desc:'Gated recurrent',    params:192, reg:0  },
+];
+
+const CHALLENGES = [
+  {
+    level: 1,
+    name: 'Basic Classifier',
+    desc: 'Build a simple image classifier. Marchel used this pattern for his helmet safety detection project.',
+    project: 'Construction Safety Helmet Classifier',
+    requirements: {
+      minDepth: 3,
+      mustHave: ['conv','dense'],
+      mustEnd: 'softmax',
+      minParams: 100,
+    },
+    hint: 'Try: Conv2D → ReLU → Flatten → Dense → Softmax',
+  },
+  {
+    level: 2,
+    name: 'OCR Feature Extractor',
+    desc: 'Extract features from Nusantara script images. Used in IndoLLNet for handwritten character recognition.',
+    project: 'IndoLLNet v2.1',
+    requirements: {
+      minDepth: 4,
+      mustHave: ['conv','pool','dense'],
+      mustEnd: 'softmax',
+      minParams: 150,
+      needsReg: true,
+    },
+    hint: 'Add MaxPool for downsampling and Dropout for regularization.',
+  },
+  {
+    level: 3,
+    name: 'Sequence Model',
+    desc: 'Build an NLP sequence model for Indonesian language. Foundation for DIALEKTA 2B architecture.',
+    project: 'DIALEKTA 2B',
+    requirements: {
+      minDepth: 4,
+      mustHave: ['embed','lstm'],
+      mustEnd: 'softmax',
+      minParams: 300,
+    },
+    hint: 'Embedding layers convert tokens. LSTM processes sequences.',
+  },
+  {
+    level: 4,
+    name: 'Transformer Block',
+    desc: 'Replicate a simplified transformer block. The core of ARUNA 7B foundation model.',
+    project: 'ARUNA 7B',
+    requirements: {
+      minDepth: 5,
+      mustHave: ['embed','attn','norm','dense'],
+      mustEnd: 'softmax',
+      minParams: 600,
+      needsReg: true,
+    },
+    hint: 'Embed → Attention → BatchNorm → Dense → Dropout → Softmax',
+  },
+  {
+    level: 5,
+    name: 'Medical Imaging',
+    desc: 'Deep CNN for DVH optimization in IMRT. Marchel\'s NVIDIA × UGM scholarship project.',
+    project: 'DVH & Radiomic IMRT Optimizer',
+    requirements: {
+      minDepth: 6,
+      mustHave: ['conv','pool','dense','dropout'],
+      mustEnd: 'dense',
+      minParams: 400,
+      needsReg: true,
+      minReg: 30,
+    },
+    hint: 'Deep CNN: multiple Conv+Pool blocks, heavy Dropout for medical data.',
+  },
+];
+
+let currentChallengeIdx = 0;
+let placedLayers = [];
+let totalScore = 0;
+let gameScore = 0;
+let streak = 0;
+let training = false;
+
+function initGame() {
+  renderPalette();
+  loadChallenge(0);
+  setupDragDrop();
+}
+
+function renderPalette() {
+  const palette = document.getElementById('layer-palette');
+  palette.innerHTML = LAYER_TYPES.map(l => `
+    <div class="layer-chip" draggable="true" data-id="${l.id}"
+         ondragstart="onDragStart(event,'${l.id}')">
+      <span class="lc-dot" style="background:${l.color}"></span>
+      <div>
+        <div class="lc-name">${l.name}</div>
+        <div class="lc-desc">${l.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+function loadChallenge(idx) {
+  const ch = CHALLENGES[idx % CHALLENGES.length];
+  placedLayers = [];
+  renderCanvas();
+  updateMetrics();
+
+  document.getElementById('gs-level').textContent = ch.level;
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('train-log').textContent = 'Waiting for architecture...';
+  document.getElementById('train-bar').style.width = '0%';
+
+  const req = ch.requirements;
+  const targets = [];
+  targets.push(`Min ${req.minDepth} layers`);
+  if (req.mustHave) req.mustHave.forEach(id => {
+    const l = LAYER_TYPES.find(lt => lt.id === id);
+    targets.push(`Include ${l ? l.name : id}`);
+  });
+  if (req.mustEnd) {
+    const l = LAYER_TYPES.find(lt => lt.id === req.mustEnd);
+    targets.push(`End with ${l ? l.name : req.mustEnd}`);
+  }
+  if (req.needsReg) targets.push('Add regularization');
+  if (req.minParams) targets.push(`Min ${req.minParams} params`);
+
+  document.getElementById('challenge-card').innerHTML = `
+    <div class="ch-info">
+      <div class="ch-name">LEVEL ${ch.level}: ${ch.name}</div>
+      <div class="ch-desc">${ch.desc}</div>
+      <div style="margin-top:0.5rem;font-size:0.72rem;color:var(--cyan)">
+        Based on: <em>${ch.project}</em>
+      </div>
+      <div style="margin-top:0.4rem;font-size:0.7rem;color:var(--text-dim)">
+        💡 ${ch.hint}
+      </div>
+    </div>
+    <div class="ch-target">
+      <div class="ch-target-lbl">REQUIREMENTS</div>
+      ${targets.map(t => `<div class="target-item" id="req-${t.replace(/\s+/g,'_')}">${t}</div>`).join('')}
+    </div>`;
+}
+
+/* ── DRAG & DROP ── */
+let dragLayerId = null;
+
+function onDragStart(e, id) {
+  dragLayerId = id;
+  e.dataTransfer.effectAllowed = 'copy';
+}
+
+function setupDragDrop() {
+  const canvas = document.getElementById('canvas-inner');
+  canvas.addEventListener('dragover', e => {
+    e.preventDefault();
+    canvas.classList.add('drag-over');
+  });
+  canvas.addEventListener('dragleave', () => canvas.classList.remove('drag-over'));
+  canvas.addEventListener('drop', e => {
+    e.preventDefault();
+    canvas.classList.remove('drag-over');
+    if (dragLayerId) {
+      const layer = LAYER_TYPES.find(l => l.id === dragLayerId);
+      if (layer) { placedLayers.push({...layer}); renderCanvas(); updateMetrics(); }
+      dragLayerId = null;
+    }
+  });
+
+  // Also click to add on mobile
+  document.querySelectorAll('.layer-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const id = chip.dataset.id;
+      const layer = LAYER_TYPES.find(l => l.id === id);
+      if (layer) { placedLayers.push({...layer}); renderCanvas(); updateMetrics(); }
+    });
+  });
+}
+
+function removeLayer(idx) {
+  placedLayers.splice(idx, 1);
+  renderCanvas();
+  updateMetrics();
+}
+
+function clearCanvas() {
+  placedLayers = [];
+  renderCanvas();
+  updateMetrics();
+  document.getElementById('result-panel').classList.remove('show');
+}
+
+function renderCanvas() {
+  const inner = document.getElementById('canvas-inner');
+  const empty = document.getElementById('canvas-empty');
+
+  if (placedLayers.length === 0) {
+    inner.innerHTML = '';
+    const em = document.createElement('div');
+    em.className = 'canvas-empty';
+    em.id = 'canvas-empty';
+    em.innerHTML = 'Drag layers here<br>or click them<br>to build your network';
+    inner.appendChild(em);
+    document.getElementById('train-btn').disabled = true;
+    return;
+  }
+
+  inner.innerHTML = '';
+  placedLayers.forEach((l, i) => {
+    if (i > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'layer-connector';
+      inner.appendChild(conn);
+    }
+    const div = document.createElement('div');
+    div.className = 'placed-layer';
+    div.innerHTML = `
+      <span class="pl-color" style="background:${l.color}"></span>
+      <span class="pl-name">${l.name}</span>
+      ${l.params > 0 ? `<span class="pl-param">${l.params}p</span>` : ''}
+      <button class="pl-remove" onclick="removeLayer(${i})">✕</button>`;
+    inner.appendChild(div);
+  });
+  document.getElementById('train-btn').disabled = placedLayers.length < 2;
+}
+
+function updateMetrics() {
+  const depth = placedLayers.length;
+  const params = placedLayers.reduce((s, l) => s + l.params, 0);
+  const reg = placedLayers.reduce((s, l) => s + l.reg, 0);
+  const complex = depth > 0 ? Math.min(100, Math.round((depth * 10 + params / 10 + reg) / 3)) : 0;
+
+  document.getElementById('m-depth').style.width = Math.min(100, depth * 10) + '%';
+  document.getElementById('mv-depth').textContent = depth;
+  document.getElementById('m-params').style.width = Math.min(100, params / 10) + '%';
+  document.getElementById('mv-params').textContent = params;
+  document.getElementById('m-reg').style.width = Math.min(100, reg * 2) + '%';
+  document.getElementById('mv-reg').textContent = reg + '%';
+  document.getElementById('mv-complex').textContent = complex > 0 ? complex + '/100' : '—';
+}
+
+/* ── TRAIN ── */
+function trainNetwork() {
+  if (training || placedLayers.length < 2) return;
+  training = true;
+  document.getElementById('train-btn').disabled = true;
+  document.getElementById('train-log').textContent = 'Initializing training run...';
+
+  const bar = document.getElementById('train-bar');
+  const log = document.getElementById('train-log');
+  const logs = [
+    'Loading dataset...',
+    'Compiling model...',
+    'Epoch 1/5 — loss: 2.301',
+    'Epoch 2/5 — loss: 1.847',
+    'Epoch 3/5 — loss: 1.203',
+    'Epoch 4/5 — loss: 0.891',
+    'Epoch 5/5 — loss: 0.634',
+    'Evaluating on validation set...',
+    'Computing metrics...',
+  ];
+
+  let step = 0;
+  const iv = setInterval(() => {
+    step++;
+    const pct = Math.round(step / logs.length * 100);
+    bar.style.width = pct + '%';
+    if (step <= logs.length) log.textContent = logs[step - 1];
+    if (step >= logs.length) {
+      clearInterval(iv);
+      setTimeout(() => evaluateNetwork(), 300);
+    }
+  }, 280);
+}
+
+function evaluateNetwork() {
+  const ch = CHALLENGES[currentChallengeIdx % CHALLENGES.length];
+  const req = ch.requirements;
+  const ids = placedLayers.map(l => l.id);
+  const depth = placedLayers.length;
+  const params = placedLayers.reduce((s, l) => s + l.params, 0);
+  const reg = placedLayers.reduce((s, l) => s + l.reg, 0);
+
+  const checks = [];
+  let passed = 0;
+
+  // Check depth
+  const depthOk = depth >= req.minDepth;
+  checks.push({ label: `Depth ${depth} / ${req.minDepth} required`, ok: depthOk });
+  if (depthOk) passed++;
+
+  // Check mustHave
+  if (req.mustHave) {
+    req.mustHave.forEach(id => {
+      const has = ids.includes(id);
+      const l = LAYER_TYPES.find(lt => lt.id === id);
+      checks.push({ label: `${l ? l.name : id} ${has ? 'found' : 'missing'}`, ok: has });
+      if (has) passed++;
+    });
+  }
+
+  // Check mustEnd
+  if (req.mustEnd) {
+    const lastId = ids[ids.length - 1];
+    const ok = lastId === req.mustEnd;
+    const l = LAYER_TYPES.find(lt => lt.id === req.mustEnd);
+    checks.push({ label: `Ends with ${l ? l.name : req.mustEnd}: ${ok ? 'yes' : 'no'}`, ok });
+    if (ok) passed++;
+  }
+
+  // Params
+  if (req.minParams) {
+    const ok = params >= req.minParams;
+    checks.push({ label: `Params ${params} / ${req.minParams} min`, ok });
+    if (ok) passed++;
+  }
+
+  // Regularization
+  if (req.needsReg) {
+    const ok = reg >= (req.minReg || 10);
+    checks.push({ label: `Regularization ${reg}% / ${req.minReg || 10}% min`, ok });
+    if (ok) passed++;
+  }
+
+  const total_checks = checks.length;
+  const accuracy = Math.round(55 + (passed / total_checks) * 40 + Math.random() * 5);
+  const success = passed === total_checks;
+
+  // Score calculation
+  let earnedScore = 0;
+  if (success) {
+    earnedScore = 100 * ch.level + streak * 20;
+    streak++;
+    totalScore += earnedScore;
+    gameScore += earnedScore;
+    currentChallengeIdx++;
+  } else {
+    streak = 0;
+    earnedScore = Math.round((passed / total_checks) * 30 * ch.level);
+    totalScore += earnedScore;
+    gameScore += earnedScore;
+  }
+
+  document.getElementById('gs-score').textContent = gameScore;
+  document.getElementById('gs-streak').textContent = streak;
+  document.getElementById('total-score').textContent = totalScore;
+
+  const panel = document.getElementById('result-panel');
+  panel.classList.add('show');
+
+  if (success) {
+    panel.innerHTML = `
+      <div class="result-ok">✓ MODEL TRAINED SUCCESSFULLY!</div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin:0.4rem 0">
+        Val Accuracy: ${accuracy}% &nbsp;|&nbsp; Score: +${earnedScore} pts
+        ${streak > 1 ? ' 🔥 STREAK x'+streak : ''}
+      </div>
+      ${checks.map(c => `<div style="font-size:0.72rem;color:${c.ok?'var(--green)':'var(--text-dim)'}">${c.ok?'✓':'✗'} ${c.label}</div>`).join('')}
+      <button class="btn btn-primary" onclick="nextChallenge()" style="margin-top:0.6rem;font-size:0.48rem">NEXT CHALLENGE →</button>`;
+    document.getElementById('train-log').textContent = 'Training complete! Accuracy: ' + accuracy + '%';
+  } else {
+    panel.innerHTML = `
+      <div class="result-fail">✗ REQUIREMENTS NOT MET (${passed}/${total_checks})</div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin:0.4rem 0">Partial score: +${earnedScore} pts</div>
+      ${checks.map(c => `<div style="font-size:0.72rem;color:${c.ok?'var(--green)':'var(--red)'}">${c.ok?'✓':'✗'} ${c.label}</div>`).join('')}
+      <div style="margin-top:0.5rem;font-size:0.72rem;color:var(--amber)">💡 ${ch.hint}</div>
+      <button class="btn btn-ghost" onclick="retryChallenge()" style="margin-top:0.6rem;font-size:0.48rem">RETRY</button>`;
+    document.getElementById('train-log').textContent = 'Failed. Check requirements and try again.';
+  }
+
+  document.getElementById('train-btn').disabled = false;
+  training = false;
+}
+
+function nextChallenge() {
+  loadChallenge(currentChallengeIdx);
+}
+
+function retryChallenge() {
+  clearCanvas();
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('train-bar').style.width = '0%';
+  document.getElementById('train-log').textContent = 'Waiting for architecture...';
+}
+
+function skipChallenge() {
+  streak = 0;
+  currentChallengeIdx++;
+  loadChallenge(currentChallengeIdx);
+  document.getElementById('gs-streak').textContent = 0;
+}
+</script>
+</body>
+</html>
