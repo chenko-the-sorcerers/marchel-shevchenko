@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess vs AI — Marchel Shevchenko</title>
+  <meta name="description" content="Play chess against Claude AI. Axion portfolio." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='56%' dominant-baseline='middle' text-anchor='middle' font-size='18' fill='%2300ff41'>♚</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles/chess.css" />
+  <script src="components/audio.js" defer></script>
+</head>
+<body>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<nav id="navbar">
+  <a class="nav-logo" href="index.html">MARCHEL<span>.</span>SYS</a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="projects.html" class="active">Projects</a></li>
+    <li><a href="experience.html">Experience</a></li>
+    <li><a href="skills.html">Skills</a></li>
+    <li><a href="contact.html">Contact</a></li>
+    <li><a href="research.html">Research</a></li>
+    <li><a href="chat.html">AI_CHAT</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    <span>CHESS&nbsp;vs&nbsp;AI</span>
+  </div>
+  <div class="nav-hamburger" id="nav-hamburger">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<section class="project-hero">
+  <div class="project-kicker reveal"><span>◆</span>&nbsp;Marchel.SYS · AI Playground · Chess Engine</div>
+  <h1 class="project-title reveal" style="transition-delay:0.05s">CHESS<span class="sub">&nbsp;vs AI</span></h1>
+  <p class="project-subtitle reveal" style="transition-delay:0.1s">
+    Play against Axion AI — minimax engine with alpha-beta pruning and piece-square evaluation.
+    You play <span style="color:var(--green)">White ♔</span>, I play <span style="color:var(--amber)">Black ♚</span>.
+  </p>
+  <div class="hero-meta reveal" style="transition-delay:0.15s">
+    <span class="event-badge"><span class="dot"></span>LIVE · PVE</span>
+    <span class="tag tag-green">Minimax · Alpha-Beta</span>
+    <span class="tag tag-amber">PST Evaluation</span>
+    <span class="tag">Castling · En Passant · Promotion</span>
+  </div>
+</section>
+
+<div class="page-wrap">
+  <div class="section-header reveal">
+    <span class="sh-prompt">marchel@sys:~$</span>
+    <span class="sh-cmd">chess --mode pvai --color white</span>
+    <span class="sh-args">--engine minimax --depth 3</span>
+  </div>
+
+  <div class="game-wrap reveal" style="transition-delay:0.05s">
+    <div>
+      <div class="player-bar ai" id="bar-ai">
+        <div class="player-left">
+          <div class="player-avatar ai">AI</div>
+          <div><div class="player-name">Axion Sys AI</div><div class="player-side">Black · ♚ Top</div></div>
+        </div>
+        <div class="player-captured" id="cap-black"></div>
+        <div class="player-score" id="score-black"></div>
+      </div>
+
+      <div class="board-container">
+        <div class="promo-overlay" id="promo-overlay">
+          <div class="promo-title">PROMOTE PAWN</div>
+          <div class="promo-pieces">
+            <div class="promo-piece" data-piece="Q">♕</div>
+            <div class="promo-piece" data-piece="R">♖</div>
+            <div class="promo-piece" data-piece="B">♗</div>
+            <div class="promo-piece" data-piece="N">♘</div>
+          </div>
+        </div>
+        <div id="board-grid"></div>
+      </div>
+
+      <div class="player-bar" id="bar-user">
+        <div class="player-left">
+          <div class="player-avatar user">U</div>
+          <div><div class="player-name">You</div><div class="player-side">White · ♔ Bottom</div></div>
+        </div>
+        <div class="player-captured" id="cap-white"></div>
+        <div class="player-score" id="score-white"></div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <div class="t-card">
+        <div class="t-card-header"><div class="t-card-dot"></div>STATUS.SYS</div>
+        <div class="t-card-body">
+          <div class="status-line">
+            <span class="status-icon" id="status-icon">◆</span>
+            <span class="status-text" id="status-text">Initializing...</span>
+          </div>
+          <div class="thinking-row" id="thinking-row" style="display:none">
+            <span style="color:var(--amber);font-size:0.72rem">AI computing</span>
+            <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="t-card">
+        <div class="t-card-header"><div class="t-card-dot"></div>CONTROLS.EXE</div>
+        <div class="t-card-body">
+          <div class="ctrl-grid">
+            <button class="ctrl-btn" onclick="undoMove()">↩ Undo</button>
+            <button class="ctrl-btn amber" onclick="showHint()">◈ Hint</button>
+            <button class="ctrl-btn danger" onclick="offerDraw()">◎ Draw</button>
+            <button class="ctrl-btn" onclick="newGame()">⟳ New</button>
+          </div>
+          <div style="margin-top:0.8rem;font-size:0.68rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:0.3rem">AI Difficulty</div>
+          <div class="diff-row">
+            <button class="diff-btn" data-depth="1" onclick="setDiff(this)">Easy</button>
+            <button class="diff-btn" data-depth="2" onclick="setDiff(this)">Mid</button>
+            <button class="diff-btn active" data-depth="3" onclick="setDiff(this)">Hard</button>
+            <button class="diff-btn" data-depth="4" onclick="setDiff(this)">Max</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="t-card">
+        <div class="t-card-header"><div class="t-card-dot"></div>MOVE.LOG</div>
+        <div class="t-card-body" style="padding:0.6rem 0.8rem">
+          <div class="move-log-scroll" id="move-log-scroll">
+            <div class="move-log-grid" id="move-log-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="t-card">
+        <div class="t-card-header"><div class="t-card-dot" style="background:var(--text-dim);box-shadow:none"></div>HOW TO PLAY</div>
+        <div class="t-card-body">
+          <div style="font-size:0.75rem;color:var(--text-dim);line-height:1.9">
+            <div><span class="text-green">◆</span>&nbsp;Click piece to select</div>
+            <div><span class="text-green">◆</span>&nbsp;Green dots = legal moves</div>
+            <div><span class="text-green">◆</span>&nbsp;Click dot to move</div>
+            <div><span class="text-amber">◆</span>&nbsp;Hint highlights best move</div>
+            <div><span class="text-amber">◆</span>&nbsp;Undo removes your + AI move</div>
+            <div style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px dotted var(--border);font-size:0.68rem">
+              Castling · En passant · Promotion · Stalemate all supported.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div style="max-width:1100px;margin:0 auto">
+    <span class="text-dim">marchel@sys:~$ </span>
+    <span class="text-green">./chess --engine minimax</span>
+    <span class="text-dim"> — Marchel Shevchenko Portfolio · </span>
+    <a href="projects.html">Projects</a>
+    <span class="text-dim"> · </span>
+    <a href="indollnet.html">IndoLLNet</a>
+    <span class="text-dim"> · </span>
+    <a href="arutala.html">Arutala</a>
+  </div>
+</footer>
+
+<script src="/pages/chess.js"></script>
+</body>
+</html>

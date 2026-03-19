@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AXION ADMIN — Portfolio CMS</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>⚙</text></svg>"/>
+  <link rel="stylesheet" href="styles/globals.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    /* ── ADMIN LAYOUT ── */
+    body { cursor: default; }
+    #cursor, #cursor-trail { display: none; }
+
+    #login-screen {
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 2.5rem; width: 420px; max-width: 90vw;
+    }
+    .login-title {
+      font-family: var(--font-pixel); font-size: 0.55rem;
+      color: var(--green); text-shadow: var(--glow-g);
+      margin-bottom: 1.5rem; letter-spacing: 0.08em;
+    }
+    .login-field { margin-bottom: 1rem; }
+    .login-label { font-size: 0.78rem; color: var(--text-dim); display: block; margin-bottom: 0.3rem; }
+    .login-error { color: var(--red); font-size: 0.8rem; margin-top: 0.8rem; min-height: 1.2rem; }
+
+    /* ── ADMIN SHELL ── */
+    #admin-shell { display: none; min-height: 100vh; }
+
+    .admin-header {
+      position: fixed; top: 0; left: 0; right: 0; height: 48px;
+      background: rgba(2,9,5,0.96); border-bottom: 1px solid var(--border-hi);
+      display: flex; align-items: center; padding: 0 1.5rem; gap: 1rem; z-index: 100;
+    }
+    .admin-logo { font-family: var(--font-pixel); font-size: 0.5rem; color: var(--green); text-shadow: var(--glow-g); }
+    .admin-user { font-size: 0.75rem; color: var(--text-dim); margin-left: auto; }
+    .admin-logout { font-size: 0.72rem; color: var(--red); cursor: pointer; border: 1px solid rgba(255,64,64,0.3); padding: 0.2rem 0.6rem; }
+    .admin-logout:hover { background: rgba(255,64,64,0.08); }
+
+    .admin-body { display: flex; padding-top: 48px; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 200px; flex-shrink: 0;
+      background: var(--panel); border-right: 1px solid var(--border-hi);
+      padding: 1.2rem 0; position: sticky; top: 48px; height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    .sidebar-section { font-family: var(--font-pixel); font-size: 0.42rem; color: var(--text-dim); padding: 0.5rem 1rem 0.2rem; letter-spacing: 0.08em; }
+    .sidebar-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 1rem; font-size: 0.8rem; color: var(--text-dim);
+      cursor: pointer; border-left: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .sidebar-item:hover { color: var(--text); background: rgba(0,255,65,0.03); }
+    .sidebar-item.active { color: var(--green); border-left-color: var(--green); background: rgba(0,255,65,0.05); }
+    .sidebar-icon { font-size: 0.8rem; width: 18px; text-align: center; }
+    .sidebar-badge { margin-left: auto; font-size: 0.65rem; background: var(--green-dark); color: var(--green); padding: 0.05rem 0.35rem; border-radius: 2px; }
+
+    /* ── MAIN CONTENT ── */
+    .admin-main { flex: 1; padding: 2rem; overflow-x: hidden; }
+
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* ── SECTION HEADER ── */
+    .admin-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-section-title { font-family: var(--font-vt); font-size: 1.6rem; color: var(--green); text-shadow: var(--glow-g); }
+    .admin-section-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 0.15rem; }
+
+    /* ── TABLE ── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .data-table th {
+      text-align: left; padding: 0.5rem 0.75rem;
+      font-family: var(--font-pixel); font-size: 0.42rem;
+      color: var(--text-dim); border-bottom: 1px solid var(--border-hi);
+      letter-spacing: 0.06em; white-space: nowrap;
+    }
+    .data-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .data-table tr:hover td { background: rgba(0,255,65,0.02); }
+    .td-title { color: var(--text-bright); font-weight: 500; max-width: 260px; }
+    .td-sub   { color: var(--text-dim); font-size: 0.75rem; }
+    .td-badge { display: inline-block; padding: 0.1rem 0.4rem; font-size: 0.68rem; border: 1px solid; }
+    .td-actions { display: flex; gap: 0.4rem; }
+    .btn-edit   { font-size: 0.7rem; padding: 0.2rem 0.55rem; background: transparent; border: 1px solid var(--border-hi); color: var(--cyan); cursor: pointer; }
+    .btn-edit:hover { border-color: var(--cyan); background: rgba(0,229,255,0.06); }
+    .btn-del    { font-size: 0.7rem; padding: 0.2rem 0.55rem; background: transparent; border: 1px solid rgba(255,64,64,0.3); color: var(--red); cursor: pointer; }
+    .btn-del:hover { border-color: var(--red); background: rgba(255,64,64,0.06); }
+
+    .empty-state { padding: 3rem; text-align: center; color: var(--text-dim); font-size: 0.85rem; }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      width: min(640px, 94vw); max-height: 88vh;
+      display: flex; flex-direction: column;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border);
+      background: rgba(0,255,65,0.03); flex-shrink: 0;
+    }
+    .modal-title { font-family: var(--font-pixel); font-size: 0.48rem; color: var(--green); letter-spacing: 0.07em; }
+    .modal-close { background: none; border: none; color: var(--text-dim); font-size: 1.2rem; cursor: pointer; line-height: 1; }
+    .modal-close:hover { color: var(--red); }
+    .modal-body { padding: 1.2rem; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 0.9rem 1.2rem; border-top: 1px solid var(--border); display: flex; gap: 0.7rem; justify-content: flex-end; flex-shrink: 0; }
+
+    /* ── FORM ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    .form-label { font-size: 0.75rem; color: var(--text-dim); }
+    .form-label span { color: var(--red); margin-left: 0.2rem; }
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      color: var(--text-bright); font-family: var(--font-mono);
+      font-size: 0.83rem; padding: 0.45rem 0.7rem; outline: none;
+      transition: border-color 0.2s; width: 100%;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--green); box-shadow: 0 0 8px rgba(0,255,65,0.15);
+    }
+    .form-select option { background: var(--bg2); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-hint { font-size: 0.7rem; color: var(--text-dim); }
+
+    /* Tags input */
+    .tags-wrap {
+      display: flex; flex-wrap: wrap; gap: 0.35rem;
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      padding: 0.35rem 0.5rem; min-height: 40px; align-items: center;
+      cursor: text;
+    }
+    .tags-wrap:focus-within { border-color: var(--green); }
+    .tag-chip {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      background: var(--green-dark); color: var(--green);
+      font-size: 0.72rem; padding: 0.1rem 0.4rem;
+    }
+    .tag-chip-del { cursor: pointer; opacity: 0.6; font-size: 0.85rem; }
+    .tag-chip-del:hover { opacity: 1; }
+    .tag-input { background: transparent; border: none; outline: none; color: var(--text-bright); font-family: var(--font-mono); font-size: 0.83rem; min-width: 80px; flex: 1; }
+
+    /* Image upload */
+    .img-upload-area {
+      border: 1px dashed var(--border-hi); padding: 1.5rem;
+      text-align: center; cursor: pointer; transition: border-color 0.2s;
+    }
+    .img-upload-area:hover { border-color: var(--green); }
+    .img-upload-area.drag { border-color: var(--green); background: rgba(0,255,65,0.04); }
+    .img-preview { max-width: 100%; max-height: 160px; margin-top: 0.6rem; border: 1px solid var(--border); }
+    .img-upload-label { font-size: 0.8rem; color: var(--text-dim); }
+    .img-upload-label span { color: var(--green); }
+    .img-upload-btn { display: none; }
+
+    /* ── TOAST ── */
+    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+    .toast {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 0.6rem 1rem; font-size: 0.82rem; color: var(--text);
+      min-width: 220px; animation: toast-in 0.25s ease;
+    }
+    .toast.ok   { border-color: var(--green); color: var(--green); }
+    .toast.err  { border-color: var(--red);   color: var(--red);   }
+    .toast.warn { border-color: var(--amber);  color: var(--amber); }
+    @keyframes toast-in { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
+
+    /* ── STATS ROW ── */
+    .stats-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat-box {
+      background: var(--panel); border: 1px solid var(--border-hi);
+      padding: 0.8rem 1.2rem; min-width: 120px;
+    }
+    .stat-box-num { font-family: var(--font-vt); font-size: 2rem; color: var(--amber); text-shadow: var(--glow-a); line-height: 1; }
+    .stat-box-lbl { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.15rem; }
+
+    /* ── SUPABASE CONFIG FORM ── */
+    .config-panel { background: var(--panel); border: 1px solid var(--amber); padding: 1.2rem; margin-bottom: 1.5rem; }
+    .config-title { font-family: var(--font-pixel); font-size: 0.48rem; color: var(--amber); margin-bottom: 0.8rem; }
+    .config-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .form-grid { grid-template-columns: 1fr; }
+      .config-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-title">⚙ AXION ADMIN — PORTFOLIO CMS</div>
+    <div class="form-group login-field">
+      <label class="login-label">&gt; SUPABASE URL</label>
+      <input type="text" class="form-input" id="cfg-url" placeholder="https://xxxx.supabase.co"/>
+    </div>
+    <div class="form-group login-field">
+      <label class="login-label">&gt; ANON KEY</label>
+      <input type="password" class="form-input" id="cfg-key" placeholder="eyJhbGc..."/>
+    </div>
+    <div class="form-group login-field">
+      <label class="login-label">&gt; ADMIN PASSWORD</label>
+      <input type="password" class="form-input" id="cfg-pass" placeholder="set your admin password"/>
+    </div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:0.5rem">CONNECT →</button>
+    <div class="login-error" id="login-error"></div>
+    <div style="margin-top:1rem;font-size:0.72rem;color:var(--text-dim)">
+      Credentials saved in localStorage. First time? Set a password above.
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN SHELL ── -->
+<div id="admin-shell">
+  <header class="admin-header">
+    <div class="admin-logo">⚙ AXION/ADMIN</div>
+    <span id="hdr-section" style="font-size:0.75rem;color:var(--text-dim)"></span>
+    <span class="admin-user" id="hdr-user"></span>
+    <button class="admin-logout" id="logout-btn">LOGOUT</button>
+  </header>
+
+  <div class="admin-body">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-section">DASHBOARD</div>
+      <div class="sidebar-item active" data-page="overview">
+        <span class="sidebar-icon">◈</span> Overview
+      </div>
+
+      <div class="sidebar-section" style="margin-top:0.8rem">CONTENT</div>
+      <div class="sidebar-item" data-page="experience">
+        <span class="sidebar-icon">◆</span> Experience
+        <span class="sidebar-badge" id="badge-experience">0</span>
+      </div>
+      <div class="sidebar-item" data-page="achievements">
+        <span class="sidebar-icon">◆</span> Achievements
+        <span class="sidebar-badge" id="badge-achievements">0</span>
+      </div>
+      <div class="sidebar-item" data-page="projects">
+        <span class="sidebar-icon">◆</span> Projects
+        <span class="sidebar-badge" id="badge-projects">0</span>
+      </div>
+      <div class="sidebar-item" data-page="talks">
+        <span class="sidebar-icon">◆</span> Talks
+        <span class="sidebar-badge" id="badge-talks">0</span>
+      </div>
+      <div class="sidebar-item" data-page="publications">
+        <span class="sidebar-icon">◆</span> Publications
+        <span class="sidebar-badge" id="badge-publications">0</span>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="admin-main">
+
+      <!-- OVERVIEW -->
+      <div class="page-section active" id="page-overview">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">OVERVIEW</div>
+            <div class="admin-section-sub">Portfolio content summary</div>
+          </div>
+        </div>
+        <div class="stats-row" id="overview-stats"></div>
+        <div class="t-card" style="padding:1rem">
+          <div class="t-card-header"><div class="t-card-dot"></div>QUICK ACTIONS</div>
+          <div class="t-card-body" style="display:flex;gap:0.7rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="nav('experience')">+ ADD EXPERIENCE</button>
+            <button class="btn btn-ghost"   onclick="nav('projects')">+ ADD PROJECT</button>
+            <button class="btn btn-amber"   onclick="nav('achievements')">+ ADD ACHIEVEMENT</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXPERIENCE -->
+      <div class="page-section" id="page-experience">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">EXPERIENCE</div>
+            <div class="admin-section-sub">Work history & roles</div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('experience')">+ ADD</button>
+        </div>
+        <div id="tbl-experience"></div>
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="page-section" id="page-achievements">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">ACHIEVEMENTS</div>
+            <div class="admin-section-sub">Awards, grants & recognition</div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('achievements')">+ ADD</button>
+        </div>
+        <div id="tbl-achievements"></div>
+      </div>
+
+      <!-- PROJECTS -->
+      <div class="page-section" id="page-projects">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">PROJECTS</div>
+            <div class="admin-section-sub">Research & development work</div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('projects')">+ ADD</button>
+        </div>
+        <div id="tbl-projects"></div>
+      </div>
+
+      <!-- TALKS -->
+      <div class="page-section" id="page-talks">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">TALKS</div>
+            <div class="admin-section-sub">Seminars, workshops, lectures</div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('talks')">+ ADD</button>
+        </div>
+        <div id="tbl-talks"></div>
+      </div>
+
+      <!-- PUBLICATIONS -->
+      <div class="page-section" id="page-publications">
+        <div class="admin-section-header">
+          <div>
+            <div class="admin-section-title">PUBLICATIONS</div>
+            <div class="admin-section-sub">Research papers & journals</div>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('publications')">+ ADD</button>
+        </div>
+        <div id="tbl-publications"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">ADD ENTRY</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">CANCEL</button>
+      <button class="btn btn-primary" id="modal-save-btn" onclick="saveEntry()">SAVE ENTRY</button>
+    </div>
+  </div>
+</div>
+
+<script src="lib/cv-data.js" defer></script>
+<script>
+/* ═══════════════════════════════════════════════════
+   ADMIN.JS — Inline for single-file admin panel
+   ═══════════════════════════════════════════════════ */
+
+let SB = null; // Supabase client
+let currentSection = null;
+let editingId = null;
+let currentTags = [];
+let uploadedImageUrl = null;
+let uploadFile = null;
+
+const TABLES = ['experience','achievements','projects','talks','publications'];
+
+/* ── AUTH ── */
+window.addEventListener('DOMContentLoaded', () => {
+  // Auto-fill saved credentials
+  const saved = JSON.parse(localStorage.getItem('axion_admin_cfg') || '{}');
+  if (saved.url) document.getElementById('cfg-url').value = saved.url;
+  if (saved.key) document.getElementById('cfg-key').value = saved.key;
+
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('cfg-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+  // Sidebar nav
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.addEventListener('click', () => nav(item.dataset.page));
+  });
+});
+
+async function doLogin() {
+  const url  = document.getElementById('cfg-url').value.trim();
+  const key  = document.getElementById('cfg-key').value.trim();
+  const pass = document.getElementById('cfg-pass').value.trim();
+  const errEl = document.getElementById('login-error');
+
+  if (!url || !key) { errEl.textContent = '>> ERROR: URL and key required'; return; }
+  if (!pass) { errEl.textContent = '>> ERROR: Admin password required'; return; }
+
+  // Simple password check — compare with stored or set new
+  const stored = localStorage.getItem('axion_admin_pass');
+  if (stored && stored !== btoa(pass)) {
+    errEl.textContent = '>> ERROR: Wrong admin password'; return;
+  }
+
+  errEl.textContent = '>> CONNECTING...';
+
+  try {
+    SB = window.supabase.createClient(url, key);
+    // Test connection
+    const { error } = await SB.from('experience').select('id').limit(1);
+    if (error) throw error;
+
+    // Save config
+    localStorage.setItem('axion_admin_cfg', JSON.stringify({ url, key }));
+    if (!stored) localStorage.setItem('axion_admin_pass', btoa(pass));
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-shell').style.display = 'block';
+    document.getElementById('hdr-user').textContent = `Connected: ${url.replace('https://','').split('.')[0]}`;
+
+    await loadAll();
+    toast('Connected to Supabase ✓', 'ok');
+  } catch(e) {
+    errEl.textContent = `>> ERROR: ${e.message}`;
+  }
+}
+
+function doLogout() {
+  SB = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-shell').style.display = 'none';
+}
+
+/* ── NAVIGATION ── */
+function nav(page) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.toggle('active', i.dataset.page===page));
+  document.querySelectorAll('.page-section').forEach(s => s.classList.toggle('active', s.id===`page-${page}`));
+  document.getElementById('hdr-section').textContent = page.toUpperCase();
+  currentSection = page;
+  if (page !== 'overview') loadTable(page);
+}
+
+/* ── LOAD ALL (overview) ── */
+async function loadAll() {
+  const overview = document.getElementById('overview-stats');
+  overview.innerHTML = '';
+  for (const tbl of TABLES) {
+    const { data, error } = await SB.from(tbl).select('id');
+    const count = data?.length || 0;
+    document.getElementById(`badge-${tbl}`).textContent = count;
+    const box = document.createElement('div');
+    box.className = 'stat-box';
+    box.innerHTML = `<div class="stat-box-num">${count}</div><div class="stat-box-lbl">${tbl.toUpperCase()}</div>`;
+    box.addEventListener('click', () => nav(tbl));
+    box.style.cursor = 'pointer';
+    overview.appendChild(box);
+  }
+}
+
+/* ── LOAD TABLE ── */
+async function loadTable(tbl) {
+  const el = document.getElementById(`tbl-${tbl}`);
+  el.innerHTML = '<div class="empty-state">Loading...</div>';
+  const { data, error } = await SB.from(tbl).select('*').order('sort_order', { ascending: true });
+  if (error) { el.innerHTML = `<div class="empty-state" style="color:var(--red)">Error: ${error.message}</div>`; return; }
+  if (!data?.length) { el.innerHTML = '<div class="empty-state">No entries yet. Click + ADD to create one.</div>'; return; }
+  el.innerHTML = renderTable(tbl, data);
+  document.getElementById(`badge-${tbl}`).textContent = data.length;
+}
+
+function renderTable(tbl, rows) {
+  const cols = TABLE_COLS[tbl];
+  return `<table class="data-table">
+    <thead><tr>
+      ${cols.map(c=>`<th>${c.label}</th>`).join('')}
+      <th>IMAGE</th><th>ACTIONS</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(row => `<tr>
+        ${cols.map(c => `<td>${renderCell(c, row)}</td>`).join('')}
+        <td>${row.image_url ? `<img src="${row.image_url}" style="height:32px;border:1px solid var(--border)">` : '<span class="td-sub">—</span>'}</td>
+        <td class="td-actions">
+          <button class="btn-edit" onclick="openModal('${tbl}','${row.id}')">EDIT</button>
+          <button class="btn-del"  onclick="deleteEntry('${tbl}','${row.id}')">DEL</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderCell(col, row) {
+  const v = row[col.key];
+  if (!v && v !== 0) return '<span class="td-sub">—</span>';
+  if (col.type === 'badge') return `<span class="td-badge" style="color:var(--cyan);border-color:var(--cyan-dim)">${v}</span>`;
+  if (col.type === 'bool')  return v ? '<span style="color:var(--green)">● Yes</span>' : '<span class="td-sub">○ No</span>';
+  if (col.type === 'tags')  return Array.isArray(v) ? v.map(t=>`<span class="badge badge-dim" style="margin:1px">${t}</span>`).join('') : v;
+  if (col.type === 'long')  return `<div class="td-title">${String(v).slice(0,60)}${v.length>60?'…':''}</div>`;
+  return `<div class="td-title">${v}</div>`;
+}
+
+/* ── TABLE COLUMN DEFINITIONS ── */
+const TABLE_COLS = {
+  experience: [
+    { key:'role',       label:'ROLE',     type:'main' },
+    { key:'company',    label:'COMPANY',  type:'long' },
+    { key:'period',     label:'PERIOD',   type:'main' },
+    { key:'is_current', label:'CURRENT',  type:'bool' },
+    { key:'tags',       label:'TAGS',     type:'tags' },
+  ],
+  achievements: [
+    { key:'year',  label:'YEAR',  type:'badge' },
+    { key:'title', label:'TITLE', type:'long'  },
+    { key:'org',   label:'ORG',   type:'main'  },
+  ],
+  projects: [
+    { key:'num',   label:'#',    type:'badge' },
+    { key:'title', label:'TITLE',type:'long'  },
+    { key:'tag',   label:'TAG',  type:'badge' },
+    { key:'year',  label:'YEAR', type:'main'  },
+    { key:'stack', label:'STACK',type:'tags'  },
+  ],
+  talks: [
+    { key:'year',  label:'YEAR', type:'badge' },
+    { key:'title', label:'TITLE',type:'long'  },
+    { key:'host',  label:'HOST', type:'main'  },
+    { key:'type',  label:'TYPE', type:'badge' },
+  ],
+  publications: [
+    { key:'year',  label:'YEAR',  type:'badge' },
+    { key:'title', label:'TITLE', type:'long'  },
+    { key:'venue', label:'VENUE', type:'main'  },
+    { key:'type',  label:'TYPE',  type:'badge' },
+  ],
+};
+
+/* ── MODAL FORMS ── */
+const FORMS = {
+  experience: (d={}) => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Role<span>*</span></label>
+        <input class="form-input" id="f-role" value="${d.role||''}" placeholder="AI Engineer"></div>
+      <div class="form-group"><label class="form-label">Company<span>*</span></label>
+        <input class="form-input" id="f-company" value="${d.company||''}" placeholder="PT. Kalbe Farma"></div>
+      <div class="form-group"><label class="form-label">Location</label>
+        <input class="form-input" id="f-location" value="${d.location||''}" placeholder="Jakarta, Indonesia"></div>
+      <div class="form-group"><label class="form-label">Period<span>*</span></label>
+        <input class="form-input" id="f-period" value="${d.period||''}" placeholder="Jun 2024 – Present"></div>
+      <div class="form-group full"><label class="form-label">Description</label>
+        <textarea class="form-textarea" id="f-description" rows="4">${d.description||''}</textarea></div>
+      <div class="form-group full"><label class="form-label">Tags <span class="form-hint">(press Enter/comma to add)</span></label>
+        <div class="tags-wrap" id="tags-wrap"></div></div>
+      <div class="form-group"><label class="form-label">Current Role?</label>
+        <select class="form-select" id="f-is_current">
+          <option value="false" ${!d.is_current?'selected':''}>No</option>
+          <option value="true"  ${d.is_current?'selected':''}>Yes</option>
+        </select></div>
+      <div class="form-group"><label class="form-label">Sort Order</label>
+        <input class="form-input" id="f-sort_order" type="number" value="${d.sort_order||0}"></div>
+      <div class="form-group full"><label class="form-label">Image / Logo</label>
+        <div class="img-upload-area" id="upload-area">
+          <div class="img-upload-label">Drop image here or <span>click to browse</span></div>
+          ${d.image_url?`<img src="${d.image_url}" class="img-preview" id="img-preview">`:'<div id="img-preview"></div>'}
+          <input type="file" class="img-upload-btn" id="img-input" accept="image/*">
+        </div></div>
+    </div>`,
+
+  achievements: (d={}) => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Year<span>*</span></label>
+        <input class="form-input" id="f-year" value="${d.year||''}" placeholder="2025"></div>
+      <div class="form-group"><label class="form-label">Org / Issuer</label>
+        <input class="form-input" id="f-org" value="${d.org||''}" placeholder="NVIDIA"></div>
+      <div class="form-group full"><label class="form-label">Title<span>*</span></label>
+        <input class="form-input" id="f-title" value="${d.title||''}" placeholder="NVIDIA Inception Program — USD 250K+ Grant"></div>
+      <div class="form-group"><label class="form-label">Sort Order</label>
+        <input class="form-input" id="f-sort_order" type="number" value="${d.sort_order||0}"></div>
+      <div class="form-group full"><label class="form-label">Image / Badge</label>
+        <div class="img-upload-area" id="upload-area">
+          <div class="img-upload-label">Drop image here or <span>click to browse</span></div>
+          ${d.image_url?`<img src="${d.image_url}" class="img-preview" id="img-preview">`:'<div id="img-preview"></div>'}
+          <input type="file" class="img-upload-btn" id="img-input" accept="image/*">
+        </div></div>
+    </div>`,
+
+  projects: (d={}) => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Number</label>
+        <input class="form-input" id="f-num" value="${d.num||''}" placeholder="013"></div>
+      <div class="form-group"><label class="form-label">Tag</label>
+        <select class="form-select" id="f-tag">
+          ${['NLP','LLM','CV','App','ML','Web3','Audio','Sys','Data'].map(t=>`<option ${d.tag===t?'selected':''}>${t}</option>`).join('')}
+        </select></div>
+      <div class="form-group full"><label class="form-label">Title<span>*</span></label>
+        <input class="form-input" id="f-title" value="${d.title||''}" placeholder="ARUNA 7B"></div>
+      <div class="form-group full"><label class="form-label">Description</label>
+        <textarea class="form-textarea" id="f-description">${d.description||''}</textarea></div>
+      <div class="form-group"><label class="form-label">Year</label>
+        <input class="form-input" id="f-year" value="${d.year||''}" placeholder="2024"></div>
+      <div class="form-group"><label class="form-label">Color</label>
+        <select class="form-select" id="f-color">
+          ${['green','amber','cyan'].map(c=>`<option ${d.color===c?'selected':''}>${c}</option>`).join('')}
+        </select></div>
+      <div class="form-group full"><label class="form-label">Event / Venue</label>
+        <input class="form-input" id="f-event" value="${d.event||''}" placeholder="PyCon Indonesia 2025"></div>
+      <div class="form-group full"><label class="form-label">Tech Stack <span class="form-hint">(Enter/comma to add)</span></label>
+        <div class="tags-wrap" id="tags-wrap"></div></div>
+      <div class="form-group"><label class="form-label">Sort Order</label>
+        <input class="form-input" id="f-sort_order" type="number" value="${d.sort_order||0}"></div>
+      <div class="form-group full"><label class="form-label">Project Image</label>
+        <div class="img-upload-area" id="upload-area">
+          <div class="img-upload-label">Drop image here or <span>click to browse</span></div>
+          ${d.image_url?`<img src="${d.image_url}" class="img-preview" id="img-preview">`:'<div id="img-preview"></div>'}
+          <input type="file" class="img-upload-btn" id="img-input" accept="image/*">
+        </div></div>
+    </div>`,
+
+  talks: (d={}) => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Year</label>
+        <input class="form-input" id="f-year" value="${d.year||''}" placeholder="2025"></div>
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-select" id="f-type">
+          ${['seminar','workshop','lecture','judge','mentor'].map(t=>`<option ${d.type===t?'selected':''}>${t}</option>`).join('')}
+        </select></div>
+      <div class="form-group full"><label class="form-label">Title<span>*</span></label>
+        <input class="form-input" id="f-title" value="${d.title||''}" placeholder="Behind The Scene of MLLM"></div>
+      <div class="form-group full"><label class="form-label">Host / Organizer</label>
+        <input class="form-input" id="f-host" value="${d.host||''}" placeholder="University of Darma Persada"></div>
+      <div class="form-group"><label class="form-label">Sort Order</label>
+        <input class="form-input" id="f-sort_order" type="number" value="${d.sort_order||0}"></div>
+      <div class="form-group full"><label class="form-label">Event Photo</label>
+        <div class="img-upload-area" id="upload-area">
+          <div class="img-upload-label">Drop image here or <span>click to browse</span></div>
+          ${d.image_url?`<img src="${d.image_url}" class="img-preview" id="img-preview">`:'<div id="img-preview"></div>'}
+          <input type="file" class="img-upload-btn" id="img-input" accept="image/*">
+        </div></div>
+    </div>`,
+
+  publications: (d={}) => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Year</label>
+        <input class="form-input" id="f-year" value="${d.year||''}" placeholder="2023"></div>
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-select" id="f-type">
+          ${['conference','journal','workshop','preprint'].map(t=>`<option ${d.type===t?'selected':''}>${t}</option>`).join('')}
+        </select></div>
+      <div class="form-group full"><label class="form-label">Title<span>*</span></label>
+        <input class="form-input" id="f-title" value="${d.title||''}" placeholder="ML Driven Drug Recommendation..."></div>
+      <div class="form-group full"><label class="form-label">Authors</label>
+        <input class="form-input" id="f-authors" value="${d.authors||''}" placeholder="Marchel A. Shevchenko, et al."></div>
+      <div class="form-group"><label class="form-label">Venue / Journal</label>
+        <input class="form-input" id="f-venue" value="${d.venue||''}" placeholder="ICPAPS 2023"></div>
+      <div class="form-group"><label class="form-label">DOI</label>
+        <input class="form-input" id="f-doi" value="${d.doi||''}" placeholder="10.xxxx/xxxxx"></div>
+      <div class="form-group full"><label class="form-label">Abstract</label>
+        <textarea class="form-textarea" id="f-abstract" rows="4">${d.abstract||''}</textarea></div>
+      <div class="form-group"><label class="form-label">PDF URL</label>
+        <input class="form-input" id="f-pdf_url" value="${d.pdf_url||''}" placeholder="https://..."></div>
+      <div class="form-group"><label class="form-label">Sort Order</label>
+        <input class="form-input" id="f-sort_order" type="number" value="${d.sort_order||0}"></div>
+      <div class="form-group full"><label class="form-label">Cover Image</label>
+        <div class="img-upload-area" id="upload-area">
+          <div class="img-upload-label">Drop image here or <span>click to browse</span></div>
+          ${d.image_url?`<img src="${d.image_url}" class="img-preview" id="img-preview">`:'<div id="img-preview"></div>'}
+          <input type="file" class="img-upload-btn" id="img-input" accept="image/*">
+        </div></div>
+    </div>`,
+};
+
+/* ── MODAL OPEN/CLOSE ── */
+async function openModal(tbl, id = null) {
+  currentSection = tbl;
+  editingId = id;
+  uploadedImageUrl = null;
+  uploadFile = null;
+  currentTags = [];
+
+  let data = {};
+  if (id) {
+    const { data: row } = await SB.from(tbl).select('*').eq('id', id).single();
+    data = row || {};
+    if (data.tags)  currentTags = data.tags;
+    if (data.stack) currentTags = data.stack;
+  }
+
+  document.getElementById('modal-title').textContent = id ? `EDIT ${tbl.toUpperCase()}` : `ADD ${tbl.toUpperCase()}`;
+  document.getElementById('modal-body').innerHTML = FORMS[tbl](data);
+  document.getElementById('modal-backdrop').classList.add('open');
+
+  // Init tags input
+  initTagsInput(data.tags || data.stack || []);
+
+  // Init image upload
+  initImageUpload(tbl, data.image_url);
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  editingId = null; currentTags = []; uploadedImageUrl = null; uploadFile = null;
+}
+
+/* ── TAGS INPUT ── */
+function initTagsInput(existing = []) {
+  const wrap = document.getElementById('tags-wrap');
+  if (!wrap) return;
+  currentTags = [...existing];
+  renderTags();
+
+  const inp = document.createElement('input');
+  inp.className = 'tag-input';
+  inp.placeholder = 'Add tag...';
+  wrap.appendChild(inp);
+
+  inp.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ',') && inp.value.trim()) {
+      e.preventDefault();
+      const tag = inp.value.trim().replace(/,$/, '');
+      if (tag && !currentTags.includes(tag)) { currentTags.push(tag); renderTags(); }
+      inp.value = '';
+    }
+    if (e.key === 'Backspace' && !inp.value && currentTags.length) {
+      currentTags.pop(); renderTags();
+    }
+  });
+  wrap.addEventListener('click', () => inp.focus());
+}
+
+function renderTags() {
+  const wrap = document.getElementById('tags-wrap');
+  if (!wrap) return;
+  const inp = wrap.querySelector('.tag-input');
+  wrap.innerHTML = '';
+  currentTags.forEach((tag, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${tag}<span class="tag-chip-del" onclick="removeTag(${i})">×</span>`;
+    wrap.appendChild(chip);
+  });
+  if (inp) wrap.appendChild(inp);
+  else {
+    const newInp = document.createElement('input');
+    newInp.className = 'tag-input'; newInp.placeholder = 'Add tag...';
+    wrap.appendChild(newInp);
+    initTagsInput(currentTags);
+  }
+}
+
+function removeTag(i) { currentTags.splice(i, 1); renderTags(); }
+
+/* ── IMAGE UPLOAD ── */
+function initImageUpload(tbl, existingUrl) {
+  const area  = document.getElementById('upload-area');
+  const input = document.getElementById('img-input');
+  const preview = document.getElementById('img-preview');
+  if (!area || !input) return;
+
+  uploadedImageUrl = existingUrl || null;
+
+  area.addEventListener('click', () => input.click());
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag'); });
+  area.addEventListener('dragleave', () => area.classList.remove('drag'));
+  area.addEventListener('drop', e => {
+    e.preventDefault(); area.classList.remove('drag');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+
+  input.addEventListener('change', () => {
+    if (input.files[0]) handleFile(input.files[0]);
+  });
+
+  function handleFile(file) {
+    uploadFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('img-preview') || document.createElement('img');
+      img.id = 'img-preview'; img.className = 'img-preview'; img.src = e.target.result;
+      if (!document.getElementById('img-preview')) area.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+    document.querySelector('.img-upload-label').innerHTML = `<span>${file.name}</span> (${(file.size/1024).toFixed(0)}KB) — will upload on save`;
+  }
+}
+
+/* ── SAVE ENTRY ── */
+async function saveEntry() {
+  const tbl = currentSection;
+  const btn = document.getElementById('modal-save-btn');
+  btn.disabled = true; btn.textContent = 'SAVING...';
+
+  try {
+    // Upload image first if there's a new file
+    if (uploadFile) {
+      const ext  = uploadFile.name.split('.').pop();
+      const path = `${tbl}/${Date.now()}.${ext}`;
+      const { data: upData, error: upErr } = await SB.storage
+        .from('portfolio-assets').upload(path, uploadFile, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = SB.storage.from('portfolio-assets').getPublicUrl(path);
+      uploadedImageUrl = urlData.publicUrl;
+    }
+
+    // Build payload
+    const payload = buildPayload(tbl);
+    if (uploadedImageUrl) payload.image_url = uploadedImageUrl;
+
+    let error;
+    if (editingId) {
+      ({ error } = await SB.from(tbl).update(payload).eq('id', editingId));
+    } else {
+      ({ error } = await SB.from(tbl).insert(payload));
+    }
+
+    if (error) throw error;
+
+    toast(editingId ? 'Entry updated ✓' : 'Entry created ✓', 'ok');
+    closeModal();
+    await loadTable(tbl);
+    await loadAll();
+  } catch(e) {
+    toast(`Error: ${e.message}`, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'SAVE ENTRY';
+  }
+}
+
+function buildPayload(tbl) {
+  const g = id => document.getElementById(id);
+  const v = id => g(id)?.value?.trim() || null;
+
+  const base = { sort_order: parseInt(v('f-sort_order')) || 0 };
+
+  if (tbl === 'experience') return { ...base,
+    role: v('f-role'), company: v('f-company'), location: v('f-location'),
+    period: v('f-period'), description: v('f-description'),
+    tags: currentTags, is_current: g('f-is_current')?.value === 'true',
+  };
+  if (tbl === 'achievements') return { ...base,
+    year: v('f-year'), title: v('f-title'), org: v('f-org'),
+  };
+  if (tbl === 'projects') return { ...base,
+    num: v('f-num'), title: v('f-title'), tag: v('f-tag'),
+    color: v('f-color'), description: v('f-description'),
+    stack: currentTags, event: v('f-event'), year: v('f-year'),
+  };
+  if (tbl === 'talks') return { ...base,
+    year: v('f-year'), title: v('f-title'), host: v('f-host'), type: v('f-type'),
+  };
+  if (tbl === 'publications') return { ...base,
+    year: v('f-year'), title: v('f-title'), authors: v('f-authors'),
+    venue: v('f-venue'), type: v('f-type'), abstract: v('f-abstract'),
+    doi: v('f-doi'), pdf_url: v('f-pdf_url'),
+  };
+  return base;
+}
+
+/* ── DELETE ── */
+async function deleteEntry(tbl, id) {
+  if (!confirm('Delete this entry? This cannot be undone.')) return;
+  const { error } = await SB.from(tbl).delete().eq('id', id);
+  if (error) { toast(`Error: ${error.message}`, 'err'); return; }
+  toast('Entry deleted', 'warn');
+  await loadTable(tbl);
+  await loadAll();
+}
+
+/* ── TOAST ── */
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// Close modal on backdrop click
+document.getElementById('modal-backdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-backdrop')) closeModal();
+});
+
+// ESC key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>

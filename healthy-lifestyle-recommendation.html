@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Healthy Lifestyle Recommendation — Marchel Shevchenko</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+
+  <link rel="stylesheet" href="styles/globals.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+  <script src="lib/cv-data.js"         defer></script>
+  <script src="components/crt.js"      defer></script>
+  <script src="components/navbar.js"   defer></script>
+  <script src="components/footer.js"   defer></script>
+  <script src="components/audio.js" defer></script>
+  <script src="components/terminal.js" defer></script>
+  <script src="components/wayang.js"   defer></script>
+
+  <script src="pages/healthy-lifestyle-recommendation.js" defer></script>
+
+  <style>
+    /* ── REVEAL FALLBACK ── */
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── HERO ── */
+    .proj-hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      align-items: start;
+      margin-bottom: 2rem;
+    }
+    .proj-tag {
+      font-family: var(--font-pixel);
+      font-size: 0.45rem;
+      color: var(--cyan);
+      text-shadow: var(--glow-c);
+      letter-spacing: 0.12em;
+      margin-bottom: 0.6rem;
+    }
+    .proj-name {
+      font-family: var(--font-vt);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      color: var(--text-bright);
+      line-height: 1.05;
+      margin-bottom: 0.4rem;
+    }
+    .proj-sub {
+      font-family: var(--font-vt);
+      font-size: 1.3rem;
+      color: var(--amber);
+      text-shadow: var(--glow-a);
+    }
+    .proj-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    /* ── BADGES ── */
+    .badge { font-size: 0.68rem; padding: 0.15rem 0.45rem; border: 1px solid; letter-spacing: 0.04em; display: inline-block; }
+    .badge-green { color: var(--green);    border-color: var(--green-dark); background: rgba(0,255,65,0.06); }
+    .badge-amber { color: var(--amber);    border-color: var(--amber-dim);  background: rgba(255,179,0,0.06); }
+    .badge-cyan  { color: var(--cyan);     border-color: var(--cyan-dim);   background: rgba(0,229,255,0.06); }
+    .badge-red   { color: #ff4040;         border-color: rgba(255,64,64,0.4); background: rgba(255,64,64,0.06); }
+    .badge-dim   { color: var(--text-dim); border-color: var(--border);     background: var(--bg2); }
+    .badges-row  { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.5rem; }
+
+    /* ── CARDS ── */
+    .t-card {
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      position: relative; overflow: hidden;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .t-card::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(180deg, transparent 0, transparent 3px, rgba(0,255,65,0.012) 3px, rgba(0,255,65,0.012) 4px);
+    }
+    .t-card:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(0,255,65,0.1), inset 0 0 30px rgba(0,255,65,0.02); }
+    .t-card-header {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.55rem 1rem; border-bottom: 1px solid var(--border);
+      background: rgba(0,255,65,0.03);
+      font-family: var(--font-pixel); font-size: 0.48rem; color: var(--green); letter-spacing: 0.07em;
+    }
+    .t-card-dot {
+      width: 7px; height: 7px; background: var(--green); border-radius: 50%;
+      box-shadow: var(--glow-g); animation: blink 2s ease-in-out infinite; flex-shrink: 0;
+    }
+    .t-card-body { padding: 1.2rem; }
+
+    /* ── SEC DIVIDER ── */
+    .sec-divider { margin: 2.2rem 0 1.8rem; display: flex; align-items: center; gap: 1rem; }
+    .sec-divider::before, .sec-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .sec-divider-txt { font-family: var(--font-pixel); font-size: 0.42rem; color: var(--text-dim); letter-spacing: 0.1em; white-space: nowrap; }
+
+    /* ── PIPELINE ── */
+    .pipeline { display: flex; align-items: stretch; flex-wrap: wrap; }
+    .pipe-step {
+      flex: 1; min-width: 110px;
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      padding: 0.8rem; position: relative;
+      transition: border-color var(--transition);
+    }
+    .pipe-step:hover { border-color: var(--green); }
+    .pipe-step:not(:last-child)::after {
+      content: '▶'; position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+      color: var(--green-dim); font-size: 0.8rem; z-index: 1;
+    }
+    .pipe-num   { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .pipe-title { font-family: var(--font-vt); font-size: 1.1rem; color: var(--text-bright); margin-bottom: 0.2rem; }
+    .pipe-desc  { font-size: 0.7rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── METRIC / KV ── */
+    .metric-row  { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem; margin: 0.8rem 0; }
+    .metric-box  { background: var(--bg2); border: 1px solid var(--border-hi); padding: 0.8rem 1rem; }
+    .metric-label{ font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+    .metric-val  { font-family: var(--font-vt); font-size: 1.5rem; }
+
+    .stats-row  { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.8rem; margin-bottom: 1.2rem; }
+    .stat-box   { background: var(--bg2); border: 1px solid var(--border-hi); padding: 0.8rem; text-align: center; }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 0.3rem; letter-spacing: 0.06em; }
+    .stat-val   { font-family: var(--font-vt); font-size: 1.6rem; line-height: 1; }
+    .stat-val.g { color: var(--green); text-shadow: var(--glow-g); }
+    .stat-val.a { color: var(--amber); text-shadow: var(--glow-a); }
+    .stat-val.c { color: var(--cyan);  text-shadow: var(--glow-c); }
+    .stat-val.r { color: #ff4040; }
+
+    /* ── CONTROLS ── */
+    .controls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 1rem; }
+    .ctrl-group    { display: flex; flex-direction: column; gap: 0.4rem; }
+    .ctrl-label    { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
+    .ctrl-sym      { color: var(--amber); font-family: var(--font-vt); font-size: 1rem; }
+    .ctrl-val      { color: var(--green); font-family: var(--font-mono); min-width: 3rem; text-align: right; }
+    .ctrl-name     { color: var(--text-dim); font-size: 0.7rem; }
+
+    input[type=range] { -webkit-appearance:none; width:100%; height:4px; background:var(--border-hi); outline:none; border-radius:2px; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:12px; height:12px; background:var(--green);
+      border-radius:0; box-shadow:0 0 6px rgba(0,255,65,0.6); cursor:none;
+      clip-path:polygon(50% 0%,0% 100%,50% 75%,100% 100%);
+    }
+    select {
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      color: var(--text-bright); font-family: var(--font-mono); font-size: 0.78rem;
+      padding: 0.35rem 0.6rem; outline: none; cursor: none; width: 100%;
+      transition: border-color var(--transition);
+    }
+    select:focus { border-color: var(--green); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-pixel); font-size: 0.48rem;
+      padding: 0.65rem 1.3rem; letter-spacing: 0.05em;
+      border: none; outline: none; transition: all var(--transition); cursor: none;
+    }
+    .btn-primary { background: var(--green); color: var(--bg); box-shadow: 3px 3px 0 var(--green-dark); }
+    .btn-primary:hover { background: var(--bg); color: var(--green); box-shadow: 0 0 14px rgba(0,255,65,0.5), 3px 3px 0 var(--green-dark); border: 1px solid var(--green); }
+    .btn-ghost   { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: 2px 2px 0 rgba(0,229,255,0.35); }
+    .btn-ghost:hover { background: rgba(0,229,255,0.06); box-shadow: 0 0 14px rgba(0,229,255,0.4); }
+    .btns-row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+
+    /* ── TABS ── */
+    .tabs-bar { display: flex; border-bottom: 1px solid var(--border-hi); margin-bottom: 1.5rem; overflow-x: auto; }
+    .tab-btn {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      padding: 0.45rem 1rem; background: transparent;
+      border: 1px solid transparent; border-bottom: none;
+      color: var(--text-dim); transition: all var(--transition);
+      position: relative; bottom: -1px; white-space: nowrap; cursor: none;
+    }
+    .tab-btn:hover  { color: var(--green); }
+    .tab-btn.active { color: var(--green); background: var(--panel); border-color: var(--border-hi); border-bottom-color: var(--panel); }
+    .tab-panel        { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── EQ BLOCK ── */
+    .eq-block {
+      background: var(--bg2); border-left: 3px solid var(--green-dim);
+      padding: 0.8rem 1rem; margin: 0.6rem 0;
+      font-size: 0.82rem; color: var(--cyan); line-height: 1.9; overflow-x: auto;
+    }
+    .eq-block .eq-label { color: var(--text-dim); font-size: 0.7rem; margin-bottom: 0.2rem; }
+    .eq-var   { color: var(--amber); }
+    .eq-op    { color: var(--green); }
+    .eq-param { color: var(--cyan); }
+
+    /* ── CODE BLOCK ── */
+    .code-block {
+      background: var(--bg); border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan-dim);
+      padding: 0.8rem 1rem; font-size: 0.76rem; color: var(--text-dim);
+      line-height: 1.8; overflow-x: auto; white-space: pre;
+      font-family: var(--font-mono);
+    }
+    .code-block .kw   { color: var(--amber); }
+    .code-block .fn   { color: var(--cyan); }
+    .code-block .str  { color: var(--green); }
+    .code-block .cm   { color: var(--text-dim); opacity: 0.6; font-style: italic; }
+    .code-block .num  { color: #ff4040; }
+
+    /* ── RECOMMENDATION CARDS ── */
+    .rec-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
+    .rec-item {
+      display: flex; align-items: center; gap: 0.8rem;
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      padding: 0.6rem 0.9rem;
+      transition: border-color var(--transition);
+    }
+    .rec-item:hover { border-color: var(--green); }
+    .rec-rank { font-family: var(--font-pixel); font-size: 0.4rem; color: var(--text-dim); min-width: 1.5rem; text-align: center; }
+    .rec-name { flex: 1; font-size: 0.82rem; color: var(--text-bright); }
+    .rec-category { font-size: 0.68rem; color: var(--text-dim); }
+    .rec-score-bar { width: 80px; }
+    .rec-score-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 3px; }
+    .rec-score-fill  { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+    .rec-score-val   { font-family: var(--font-vt); font-size: 1rem; text-align: right; }
+
+    /* ── LOG TERMINAL ── */
+    .log-term {
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 0.8rem 1rem; font-size: 0.76rem; color: var(--text-dim);
+      max-height: 100px; overflow-y: auto; line-height: 1.9;
+    }
+    .log-term .ok   { color: var(--green); }
+    .log-term .info { color: var(--cyan); }
+    .log-term .warn { color: var(--amber); }
+
+    /* ── CHART ── */
+    .chart-wrap { background: var(--bg2); border: 1px solid var(--border); padding: 0.5rem; }
+    canvas { display: block; width: 100% !important; }
+
+    /* ── KV TABLE ── */
+    .kv-row { display: flex; gap: 0.5rem; padding: 0.35rem 0; border-bottom: 1px dotted var(--border); font-size: 0.82rem; }
+    .kv-key { color: var(--text-dim); white-space: nowrap; min-width: 140px; flex-shrink: 0; }
+    .kv-val { color: var(--text-bright); }
+
+    /* ── COMPARISON TABLE ── */
+    .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .cmp-table th { font-family: var(--font-pixel); font-size: 0.42rem; letter-spacing: 0.08em; color: var(--text-dim); padding: 0.5rem 0.8rem; border-bottom: 1px solid var(--border-hi); text-align: left; }
+    .cmp-table td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--border); color: var(--text-dim); vertical-align: top; }
+    .cmp-table td:first-child { color: var(--text-bright); font-weight: 600; }
+    .cmp-table tr:hover td { background: rgba(0,255,65,0.02); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .proj-hero { grid-template-columns: 1fr; }
+      .proj-meta { text-align: left; }
+      .stats-row { grid-template-columns: repeat(2,1fr); }
+      .metric-row { grid-template-columns: 1fr; }
+      .pipeline   { flex-direction: column; }
+      .pipe-step:not(:last-child)::after { display: none; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .controls-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="section-header reveal">
+    <span class="sh-prompt">marchel@sys:~$</span>
+    <span class="sh-cmd">exec ./projects/healthy-lifestyle-rec</span>
+    <span class="sh-args">--model=lightfm,svd --data=usda-api</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="proj-hero reveal">
+    <div>
+      <div class="proj-tag">// PROJECT_DETAIL — RECOMMENDER_SYSTEM · COLLABORATIVE_FILTERING · FOOD_AI</div>
+      <div class="proj-name">Healthy Lifestyle<br>Recommendation System</div>
+      <div class="proj-sub">LightFM WARP + Surprise SVD</div>
+    </div>
+    <div class="proj-meta">
+      <div><span style="color:var(--green)">LightFM</span> &nbsp;·&nbsp; <span style="color:var(--green)">Surprise</span></div>
+      <div><span style="color:var(--green)">Python</span> &nbsp;·&nbsp; <span style="color:var(--green)">Pandas</span></div>
+      <div style="color:var(--text-dim)">USDA Food Data Central</div>
+      <div style="color:var(--text-dim)">2024</div>
+    </div>
+  </div>
+
+  <div class="badges-row reveal">
+    <span class="badge badge-cyan">Collaborative Filtering</span>
+    <span class="badge badge-green">LightFM WARP Loss</span>
+    <span class="badge badge-green">Surprise SVD</span>
+    <span class="badge badge-amber">USDA API</span>
+    <span class="badge badge-dim">Interaction Matrix</span>
+    <span class="badge badge-dim">Matrix Factorization</span>
+    <span class="badge badge-dim">Python · Pandas · NumPy</span>
+    <span class="badge badge-dim">RMSE: 0.7184</span>
+  </div>
+
+  <!-- Overview -->
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>PROJECT_OVERVIEW.md</div>
+    <div class="t-card-body" style="font-size:.82rem;color:var(--text-dim);line-height:1.9">
+      Sistem rekomendasi makanan sehat berbasis <span style="color:var(--cyan)">Collaborative Filtering</span>
+      menggunakan data nutrisi dari <span style="color:var(--amber)">USDA Food Data Central API</span>.
+      Dua pendekatan model dibandingkan: <span style="color:var(--green)">LightFM dengan WARP loss</span>
+      (hybrid matrix factorization yang menggabungkan user-item interaction dengan content features) dan
+      <span style="color:var(--green)">Surprise SVD</span> (Singular Value Decomposition klasik untuk collaborative filtering).
+      Dataset berisi interaksi user–makanan dengan rating 1–5, difokuskan pada makanan ramah diabetik dari USDA database.
+    </div>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="stats-row reveal">
+    <div class="stat-box">
+      <div class="stat-label">SURPRISE SVD RMSE</div>
+      <div class="stat-val g">0.7184</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">LIGHTFM EPOCHS</div>
+      <div class="stat-val a">30</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">RATING SCALE</div>
+      <div class="stat-val c">1 – 5</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">DATA SOURCE</div>
+      <div class="stat-val g" style="font-size:1rem;padding-top:.3rem">USDA API</div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── SYSTEM PIPELINE ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>PIPELINE.arch</div>
+    <div class="t-card-body">
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-num">01</div>
+          <div class="pipe-title">USDA API</div>
+          <div class="pipe-desc">Fetch food data: query "diabetes-friendly", pageSize=20, Foundation + SR Legacy datasets</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">02</div>
+          <div class="pipe-title">Interaction Matrix</div>
+          <div class="pipe-desc">Simulate user-food ratings (1–5) across 10 users × N food items via random sampling</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">03</div>
+          <div class="pipe-title">LightFM</div>
+          <div class="pipe-desc">WARP loss, 30 epochs, 2 threads. Maps users & items ke latent space</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">04</div>
+          <div class="pipe-title">Surprise SVD</div>
+          <div class="pipe-desc">Train/test split 80/20, SVD matrix factorization, RMSE evaluation</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">05</div>
+          <div class="pipe-title">Top-K Recs</div>
+          <div class="pipe-desc">Rank semua food items per user, return Top-5 rekomendasi dengan score/predicted rating</div>
+        </div>
+      </div>
+
+      <div class="metric-row" style="margin-top:1rem">
+        <div class="metric-box">
+          <div class="metric-label">LOSS FUNCTION</div>
+          <div class="metric-val" style="color:var(--green)">WARP</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-top:.2rem">Weighted Approx. Rank Pairwise</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">SVD ALGORITHM</div>
+          <div class="metric-val" style="color:var(--cyan)">Funk SVD</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-top:.2rem">via Surprise library</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">USERS × FOODS</div>
+          <div class="metric-val" style="color:var(--amber)">10 × N</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-top:.2rem">simulated interaction data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Demo -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── INTERACTIVE RECOMMENDATION DEMO ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.2rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>RECOMMENDER_ENGINE.demo</div>
+    <div class="t-card-body">
+      <div style="font-size:.8rem;color:var(--text-dim);line-height:1.9;margin-bottom:1rem">
+        Simulasi sistem rekomendasi. Pilih profil user dan model, lalu generate rekomendasi makanan sehat.
+      </div>
+
+      <div class="controls-grid" style="margin-bottom:1rem">
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span class="ctrl-name">User Profile</span></div>
+          <select id="sel-user">
+            <option value="0">user_1 — Low Activity, Diabetic</option>
+            <option value="1">user_2 — Moderate, Weight Loss</option>
+            <option value="2">user_3 — High Activity, Muscle Gain</option>
+            <option value="3">user_4 — Senior, Heart Health</option>
+            <option value="4">user_5 — Vegan, Plant-Based</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label"><span class="ctrl-name">Model</span></div>
+          <select id="sel-model">
+            <option value="lightfm">LightFM (WARP Loss)</option>
+            <option value="svd">Surprise SVD</option>
+          </select>
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            <span class="ctrl-name">Top-K Results</span>
+            <span class="ctrl-val" id="val-topk">5</span>
+          </div>
+          <input type="range" id="slider-topk" min="3" max="10" step="1" value="5">
+        </div>
+      </div>
+
+      <div class="btns-row">
+        <button class="btn btn-primary" id="btn-recommend">▶ GENERATE_RECOMMENDATIONS</button>
+        <button class="btn btn-ghost"   id="btn-compare">COMPARE MODELS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>RECOMMENDATION_OUTPUT.dat</div>
+    <div class="t-card-body" style="padding-top:.8rem">
+
+      <div class="tabs-bar">
+        <button class="tab-btn active" data-tab="recs">TOP-K RESULTS</button>
+        <button class="tab-btn" data-tab="matrix">INTERACTION MATRIX</button>
+        <button class="tab-btn" data-tab="compare">MODEL COMPARISON</button>
+        <button class="tab-btn" data-tab="nutrient">NUTRIENT PROFILE</button>
+      </div>
+
+      <!-- Top-K Results -->
+      <div class="tab-panel active" id="tab-recs">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.4rem">
+          <div style="font-size:.78rem;color:var(--text-dim)">
+            Model: <span id="active-model-label" style="color:var(--green)">LightFM (WARP)</span> &nbsp;|&nbsp;
+            User: <span id="active-user-label" style="color:var(--amber)">user_1</span>
+          </div>
+          <div style="font-family:var(--font-pixel);font-size:.4rem;color:var(--text-dim)" id="rec-count">0 items</div>
+        </div>
+        <div class="rec-list" id="rec-list">
+          <div style="color:var(--text-dim);font-size:.8rem;padding:1rem 0;text-align:center">
+            // Tekan GENERATE_RECOMMENDATIONS untuk memulai...
+          </div>
+        </div>
+      </div>
+
+      <!-- Interaction Matrix -->
+      <div class="tab-panel" id="tab-matrix">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.8rem">
+          Visualisasi interaction matrix (user × food). Nilai = rating 1–5, warna lebih terang = rating lebih tinggi.
+        </div>
+        <div class="chart-wrap" style="overflow-x:auto">
+          <canvas id="chart-matrix" style="min-width:420px"></canvas>
+        </div>
+      </div>
+
+      <!-- Model Comparison -->
+      <div class="tab-panel" id="tab-compare">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.8rem">
+          Perbandingan rekomendasi dari kedua model untuk user yang sama. Tekan COMPARE MODELS untuk update.
+        </div>
+        <div class="grid-2" style="gap:1rem;margin-bottom:1rem">
+          <div>
+            <div style="font-family:var(--font-pixel);font-size:.42rem;color:var(--green);letter-spacing:.08em;margin-bottom:.6rem">LIGHTFM (WARP)</div>
+            <div class="rec-list" id="compare-lightfm"></div>
+          </div>
+          <div>
+            <div style="font-family:var(--font-pixel);font-size:.42rem;color:var(--cyan);letter-spacing:.08em;margin-bottom:.6rem">SURPRISE (SVD)</div>
+            <div class="rec-list" id="compare-svd"></div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-compare"></canvas>
+        </div>
+      </div>
+
+      <!-- Nutrient Profile -->
+      <div class="tab-panel" id="tab-nutrient">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.8rem">
+          Profil nutrisi makanan teratas yang direkomendasikan berdasarkan data USDA Food Data Central.
+        </div>
+        <div class="legend-row" style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:.8rem;font-size:.76rem">
+          <span style="display:flex;align-items:center;gap:.3rem"><span style="width:10px;height:10px;background:#00ff41;display:inline-block"></span><span style="color:var(--green)">Protein</span></span>
+          <span style="display:flex;align-items:center;gap:.3rem"><span style="width:10px;height:10px;background:#ffb300;display:inline-block"></span><span style="color:var(--amber)">Carbs</span></span>
+          <span style="display:flex;align-items:center;gap:.3rem"><span style="width:10px;height:10px;background:#00e5ff;display:inline-block"></span><span style="color:var(--cyan)">Fat</span></span>
+          <span style="display:flex;align-items:center;gap:.3rem"><span style="width:10px;height:10px;background:#ff4040;display:inline-block"></span><span style="color:#ff4040">Fiber</span></span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-nutrient"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Model Architecture -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── MODEL ARCHITECTURE ──</span></div>
+
+  <div class="grid-2 reveal" style="gap:1.2rem;margin-bottom:1.5rem">
+    <div class="t-card">
+      <div class="t-card-header"><div class="t-card-dot"></div>LIGHTFM.arch</div>
+      <div class="t-card-body">
+        <div class="eq-block">
+          <div class="eq-label">Prediction Score</div>
+          <span class="eq-var">ŷ</span><sub style="color:var(--text-dim)">ui</sub>
+          <span class="eq-op"> = </span>
+          <span class="eq-param">q<sub>u</sub> · p<sub>i</sub></span>
+          <span class="eq-op"> + </span>
+          <span class="eq-param">b<sub>u</sub> + b<sub>i</sub></span>
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">WARP Loss (Weighted Approx. Rank Pairwise)</div>
+          <span class="eq-var">L</span>
+          <span class="eq-op"> = </span>
+          ∑<sub style="color:var(--text-dim)">u</sub>
+          <span class="eq-param">rank(u,i)</span>
+          <span class="eq-op"> · </span>
+          <span class="eq-param">hinge(1 − ŷ<sub>ui</sub> + ŷ<sub>uj</sub>)</span>
+        </div>
+        <div style="margin-top:.8rem">
+          <div class="kv-row"><span class="kv-key">Loss</span><span class="kv-val" style="color:var(--green)">WARP</span></div>
+          <div class="kv-row"><span class="kv-key">Epochs</span><span class="kv-val" style="color:var(--green)">30</span></div>
+          <div class="kv-row"><span class="kv-key">Threads</span><span class="kv-val" style="color:var(--green)">2</span></div>
+          <div class="kv-row"><span class="kv-key">Latent dim</span><span class="kv-val" style="color:var(--green)">10 (default)</span></div>
+          <div class="kv-row"><span class="kv-key">Output</span><span class="kv-val" style="color:var(--cyan)">Ranking score (unbounded)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="t-card">
+      <div class="t-card-header"><div class="t-card-dot"></div>SURPRISE_SVD.arch</div>
+      <div class="t-card-body">
+        <div class="eq-block">
+          <div class="eq-label">Rating Prediction (Funk SVD)</div>
+          <span class="eq-var">r̂</span><sub style="color:var(--text-dim)">ui</sub>
+          <span class="eq-op"> = </span>
+          <span class="eq-param">μ + b<sub>u</sub> + b<sub>i</sub></span>
+          <span class="eq-op"> + </span>
+          <span class="eq-param">q<sub>i</sub><sup>T</sup> p<sub>u</sub></span>
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">Objective (SGD Minimization)</div>
+          <span class="eq-var">L</span>
+          <span class="eq-op"> = </span>
+          <span class="eq-param">(r<sub>ui</sub> − r̂<sub>ui</sub>)²</span>
+          <span class="eq-op"> + </span>
+          <span class="eq-param">λ(||q<sub>i</sub>||² + ||p<sub>u</sub>||²)</span>
+        </div>
+        <div style="margin-top:.8rem">
+          <div class="kv-row"><span class="kv-key">Algorithm</span><span class="kv-val" style="color:var(--cyan)">Funk SVD</span></div>
+          <div class="kv-row"><span class="kv-key">Train/Test</span><span class="kv-val" style="color:var(--cyan)">80% / 20%</span></div>
+          <div class="kv-row"><span class="kv-key">RMSE</span><span class="kv-val" style="color:var(--green)">0.7184</span></div>
+          <div class="kv-row"><span class="kv-key">Rating scale</span><span class="kv-val" style="color:var(--cyan)">1 – 5</span></div>
+          <div class="kv-row"><span class="kv-key">Output</span><span class="kv-val" style="color:var(--cyan)">Predicted rating (1–5)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code Snippets -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── CODE IMPLEMENTATION ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>IMPLEMENTATION.py</div>
+    <div class="t-card-body" style="padding-top:.8rem">
+
+      <div class="tabs-bar">
+        <button class="tab-btn active" data-tab="code-data">DATA FETCH</button>
+        <button class="tab-btn" data-tab="code-lightfm">LIGHTFM</button>
+        <button class="tab-btn" data-tab="code-svd">SURPRISE SVD</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-code-data">
+        <div class="code-block"><span class="kw">import</span> requests
+<span class="kw">import</span> pandas <span class="kw">as</span> pd, random
+
+<span class="cm"># Fetch food data from USDA API</span>
+<span class="kw">def</span> <span class="fn">fetch_food_data</span>(query, page_size=<span class="num">20</span>):
+    params = {
+        <span class="str">"api_key"</span>: api_key,
+        <span class="str">"query"</span>: query,
+        <span class="str">"dataType"</span>: [<span class="str">"Foundation"</span>, <span class="str">"SR Legacy"</span>],
+        <span class="str">"pageSize"</span>: page_size
+    }
+    response = requests.<span class="fn">get</span>(base_url, params=params)
+    <span class="kw">return</span> response.<span class="fn">json</span>()[<span class="str">"foods"</span>]
+
+food_data = <span class="fn">fetch_food_data</span>(<span class="str">"diabetes-friendly"</span>, page_size=<span class="num">20</span>)
+
+<span class="cm"># Build interaction matrix</span>
+interactions = pd.<span class="fn">DataFrame</span>({
+    <span class="str">"user_id"</span>: [random.<span class="fn">choice</span>(user_ids) <span class="kw">for</span> _ <span class="kw">in</span> ratings],
+    <span class="str">"food_id"</span>: [random.<span class="fn">choice</span>(food_ids) <span class="kw">for</span> _ <span class="kw">in</span> ratings],
+    <span class="str">"rating"</span>: ratings
+})</div>
+      </div>
+
+      <div class="tab-panel" id="tab-code-lightfm">
+        <div class="code-block"><span class="kw">from</span> lightfm <span class="kw">import</span> LightFM
+<span class="kw">from</span> lightfm.data <span class="kw">import</span> Dataset
+
+<span class="cm"># Prepare LightFM dataset</span>
+dataset = <span class="fn">Dataset</span>()
+dataset.<span class="fn">fit</span>(
+    interactions[<span class="str">"user_id"</span>].<span class="fn">unique</span>(),
+    interactions[<span class="str">"food_id"</span>].<span class="fn">unique</span>()
+)
+
+<span class="cm"># Build interaction matrix</span>
+interactions_matrix, weights_matrix = dataset.<span class="fn">build_interactions</span>(
+    [(row[<span class="str">"user_id"</span>], row[<span class="str">"food_id"</span>], row[<span class="str">"rating"</span>])
+     <span class="kw">for</span> _, row <span class="kw">in</span> interactions.<span class="fn">iterrows</span>()]
+)
+
+<span class="cm"># Train with WARP loss</span>
+model = <span class="fn">LightFM</span>(loss=<span class="str">"warp"</span>)
+model.<span class="fn">fit</span>(interactions_matrix, epochs=<span class="num">30</span>, num_threads=<span class="num">2</span>)
+
+<span class="cm"># Predict top-K for user</span>
+scores = model.<span class="fn">predict</span>(user_idx, item_indices)
+top_k  = <span class="fn">sorted</span>(<span class="fn">zip</span>(food_ids, scores), key=<span class="kw">lambda</span> x: -x[<span class="num">1</span>])[:<span class="num">5</span>]</div>
+      </div>
+
+      <div class="tab-panel" id="tab-code-svd">
+        <div class="code-block"><span class="kw">from</span> surprise <span class="kw">import</span> Dataset, Reader, SVD
+<span class="kw">from</span> surprise.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> surprise <span class="kw">import</span> accuracy
+
+<span class="cm"># Prepare Surprise dataset</span>
+reader = <span class="fn">Reader</span>(rating_scale=(<span class="num">1</span>, <span class="num">5</span>))
+data   = Dataset.<span class="fn">load_from_df</span>(
+    interactions[[<span class="str">"user_id"</span>, <span class="str">"food_id"</span>, <span class="str">"rating"</span>]],
+    reader
+)
+
+<span class="cm"># Train / test split & fit SVD</span>
+trainset, testset = <span class="fn">train_test_split</span>(data, test_size=<span class="num">0.2</span>)
+algo = <span class="fn">SVD</span>()
+algo.<span class="fn">fit</span>(trainset)
+
+<span class="cm"># Evaluate</span>
+predictions = algo.<span class="fn">test</span>(testset)
+accuracy.<span class="fn">rmse</span>(predictions)   <span class="cm"># → RMSE: 0.7184</span>
+
+<span class="cm"># Get Top-K for user</span>
+recs = [(item, algo.<span class="fn">predict</span>(user_id, item).est)
+        <span class="kw">for</span> item <span class="kw">in</span> items_to_predict]
+top_k = <span class="fn">sorted</span>(recs, key=<span class="kw">lambda</span> x: -x[<span class="num">1</span>])[:<span class="num">5</span>]</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Model Comparison Table -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── LIGHTFM vs SURPRISE SVD ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>MODEL_COMPARISON.tbl</div>
+    <div class="t-card-body">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>ASPECT</th>
+            <th style="color:var(--green)">LIGHTFM (WARP)</th>
+            <th style="color:var(--cyan)">SURPRISE (SVD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Paradigm</td>
+            <td style="color:var(--green)">Hybrid (CF + Content)</td>
+            <td style="color:var(--cyan)">Pure Collaborative Filtering</td>
+          </tr>
+          <tr>
+            <td>Loss Function</td>
+            <td style="color:var(--green)">WARP (ranking-based)</td>
+            <td style="color:var(--cyan)">MSE (rating prediction)</td>
+          </tr>
+          <tr>
+            <td>Output Type</td>
+            <td style="color:var(--green)">Unbounded score (ranking)</td>
+            <td style="color:var(--cyan)">Predicted rating 1–5</td>
+          </tr>
+          <tr>
+            <td>Cold Start</td>
+            <td style="color:var(--green)">Handled (via item features)</td>
+            <td style="color:var(--text-dim)">Problematic</td>
+          </tr>
+          <tr>
+            <td>Evaluation</td>
+            <td style="color:var(--text-dim)">AUC, Precision@K</td>
+            <td style="color:var(--cyan)">RMSE: 0.7184</td>
+          </tr>
+          <tr>
+            <td>Training Speed</td>
+            <td style="color:var(--green)">Fast (multi-threaded)</td>
+            <td style="color:var(--cyan)">Fast (SGD)</td>
+          </tr>
+          <tr>
+            <td>Best For</td>
+            <td style="color:var(--green)">Ranking tasks, sparse data</td>
+            <td style="color:var(--cyan)">Rating prediction, dense data</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="t-card reveal" style="margin-bottom:2rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>SYSTEM_LOG.out</div>
+    <div class="log-term" id="log-terminal">
+      <span style="color:var(--text-dim)">// Tekan GENERATE_RECOMMENDATIONS untuk memulai...</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

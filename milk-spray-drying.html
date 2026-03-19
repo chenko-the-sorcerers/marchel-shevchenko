@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Milk Spray Drying — Marchel Shevchenko</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
+
+  <!-- Shared stylesheet -->
+  <link rel="stylesheet" href="styles/globals.css" />
+  <script src="components/audio.js" defer></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+  <!-- Shared components -->
+  <script src="lib/cv-data.js"         defer></script>
+  <script src="components/crt.js"      defer></script>
+  <script src="components/navbar.js"   defer></script>
+  <script src="components/footer.js"   defer></script>
+  <script src="components/terminal.js" defer></script>
+  <script src="components/wayang.js"   defer></script>
+
+  <!-- Page script -->
+  <script src="pages/milk-spray-drying.js" defer></script>
+
+  <style>
+    /* ── REVEAL FALLBACK — visible by default, animated when JS runs ── */
+    /* Overrides globals.css .reveal { opacity:0 } so content shows even without JS */
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    /* ── HERO ── */
+    .proj-hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 2rem;
+      align-items: start;
+      margin-bottom: 2rem;
+    }
+    .proj-tag {
+      font-family: var(--font-pixel);
+      font-size: 0.45rem;
+      color: var(--cyan);
+      text-shadow: var(--glow-c);
+      letter-spacing: 0.12em;
+      margin-bottom: 0.6rem;
+    }
+    .proj-name {
+      font-family: var(--font-vt);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      color: var(--text-bright);
+      line-height: 1.05;
+      margin-bottom: 0.4rem;
+    }
+    .proj-sub {
+      font-family: var(--font-vt);
+      font-size: 1.3rem;
+      color: var(--amber);
+      text-shadow: var(--glow-a);
+    }
+    .proj-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    /* ── BADGES ── */
+    .badge {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid;
+      letter-spacing: 0.04em;
+      display: inline-block;
+    }
+    .badge-green { color: var(--green);  border-color: var(--green-dark); background: rgba(0,255,65,0.06); }
+    .badge-amber { color: var(--amber);  border-color: var(--amber-dim);  background: rgba(255,179,0,0.06); }
+    .badge-cyan  { color: var(--cyan);   border-color: var(--cyan-dim);   background: rgba(0,229,255,0.06); }
+    .badge-dim   { color: var(--text-dim); border-color: var(--border); background: var(--bg2); }
+    .badges-row  { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.5rem; }
+
+    /* ── CARDS ── */
+    .t-card {
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      position: relative;
+      overflow: hidden;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .t-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(180deg, transparent 0, transparent 3px, rgba(0,255,65,0.012) 3px, rgba(0,255,65,0.012) 4px);
+    }
+    .t-card:hover {
+      border-color: var(--green);
+      box-shadow: 0 0 20px rgba(0,255,65,0.1), inset 0 0 30px rgba(0,255,65,0.02);
+    }
+    .t-card-header {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.55rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,255,65,0.03);
+      font-family: var(--font-pixel); font-size: 0.48rem;
+      color: var(--green); letter-spacing: 0.07em;
+    }
+    .t-card-dot {
+      width: 7px; height: 7px;
+      background: var(--green); border-radius: 50%;
+      box-shadow: var(--glow-g);
+      animation: blink 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    .t-card-body { padding: 1.2rem; }
+
+    /* ── SECTION DIVIDER ── */
+    .sec-divider {
+      margin: 2.2rem 0 1.8rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .sec-divider::before, .sec-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .sec-divider-txt {
+      font-family: var(--font-pixel); font-size: 0.42rem;
+      color: var(--text-dim); letter-spacing: 0.1em; white-space: nowrap;
+    }
+
+    /* ── PIPELINE ── */
+    .pipeline {
+      display: flex; align-items: stretch; gap: 0;
+      margin: 1.2rem 0; flex-wrap: wrap;
+    }
+    .pipe-step {
+      flex: 1; min-width: 120px;
+      background: var(--bg2); border: 1px solid var(--border-hi);
+      padding: 0.8rem; position: relative;
+      transition: border-color var(--transition);
+    }
+    .pipe-step:hover { border-color: var(--green); }
+    .pipe-step:not(:last-child)::after {
+      content: '▶'; position: absolute;
+      right: -12px; top: 50%; transform: translateY(-50%);
+      color: var(--green-dim); font-size: 0.8rem; z-index: 1;
+    }
+    .pipe-num   { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--text-dim); margin-bottom: 0.4rem; }
+    .pipe-title { font-family: var(--font-vt); font-size: 1.1rem; color: var(--text-bright); margin-bottom: 0.2rem; }
+    .pipe-desc  { font-size: 0.7rem; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── METRIC BOXES ── */
+    .metric-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem; margin: 0.8rem 0; }
+    .metric-box { background: var(--bg2); border: 1px solid var(--border-hi); padding: 0.8rem 1rem; }
+    .metric-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+    .metric-val   { font-family: var(--font-vt); font-size: 1.5rem; }
+
+    /* ── CONTROLS ── */
+    .controls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 1rem; }
+    .ctrl-group    { display: flex; flex-direction: column; gap: 0.4rem; }
+    .ctrl-label    { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; }
+    .ctrl-sym      { color: var(--amber); font-family: var(--font-vt); font-size: 1rem; }
+    .ctrl-val      { color: var(--green); font-family: var(--font-mono); min-width: 3.5rem; text-align: right; }
+    .ctrl-name     { color: var(--text-dim); font-size: 0.7rem; }
+
+    input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: var(--border-hi); outline: none; border-radius: 2px; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      background: var(--green); border-radius: 0;
+      box-shadow: 0 0 6px rgba(0,255,65,0.6);
+      cursor: none;
+      clip-path: polygon(50% 0%,0% 100%,50% 75%,100% 100%);
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-pixel); font-size: 0.48rem;
+      padding: 0.65rem 1.3rem; letter-spacing: 0.05em;
+      border: none; outline: none;
+      transition: all var(--transition); cursor: none;
+    }
+    .btn-primary { background: var(--green); color: var(--bg); box-shadow: 3px 3px 0 var(--green-dark); }
+    .btn-primary:hover { background: var(--bg); color: var(--green); box-shadow: 0 0 14px rgba(0,255,65,0.5), 3px 3px 0 var(--green-dark); border: 1px solid var(--green); }
+    .btn-ghost   { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: 2px 2px 0 rgba(0,229,255,0.35); }
+    .btn-ghost:hover { background: rgba(0,229,255,0.06); box-shadow: 0 0 14px rgba(0,229,255,0.4); }
+    .btn-amber   { background: transparent; color: var(--amber); border: 1px solid var(--amber); }
+    .btn-amber:hover { background: rgba(255,179,0,0.08); box-shadow: 0 0 14px rgba(255,179,0,0.4); }
+    .btns-row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+
+    /* ── TABS ── */
+    .tabs-bar { display: flex; border-bottom: 1px solid var(--border-hi); margin-bottom: 1.5rem; overflow-x: auto; }
+    .tab-btn {
+      font-family: var(--font-mono); font-size: 0.72rem;
+      padding: 0.45rem 1rem;
+      background: transparent; border: 1px solid transparent; border-bottom: none;
+      color: var(--text-dim); transition: all var(--transition);
+      position: relative; bottom: -1px; white-space: nowrap; cursor: none;
+    }
+    .tab-btn:hover  { color: var(--green); }
+    .tab-btn.active { color: var(--green); background: var(--panel); border-color: var(--border-hi); border-bottom-color: var(--panel); }
+    .tab-panel        { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── STATS ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 0.8rem; margin-bottom: 1.2rem; }
+    .stat-box  { background: var(--bg2); border: 1px solid var(--border-hi); padding: 0.8rem; text-align: center; }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 0.3rem; letter-spacing: 0.06em; }
+    .stat-val   { font-family: var(--font-vt); font-size: 1.6rem; line-height: 1; }
+    .stat-val.s { color: #00aaff; text-shadow: 0 0 8px rgba(0,170,255,0.5); }
+    .stat-val.e { color: var(--amber); text-shadow: var(--glow-a); }
+    .stat-val.i { color: #ff4040; text-shadow: 0 0 8px rgba(255,64,64,0.5); }
+    .stat-val.r { color: var(--green); text-shadow: var(--glow-g); }
+
+    /* ── QUALITY BAR ── */
+    .quality-label  { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-bottom: 0.3rem; }
+    .quality-track  { height: 8px; background: var(--border); overflow: hidden; }
+    .quality-fill   { height: 100%; transition: width 0.5s ease, background 0.5s ease; }
+    .quality-zones  { display: flex; justify-content: space-between; font-size: 0.65rem; margin-top: 0.25rem; }
+
+    /* ── LEGEND ── */
+    .legend-row { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem; font-size: 0.76rem; }
+    .leg-item   { display: flex; align-items: center; gap: 0.4rem; }
+    .leg-dot    { width: 10px; height: 10px; flex-shrink: 0; }
+
+    /* ── EQUATIONS ── */
+    .eq-block {
+      background: var(--bg2); border-left: 3px solid var(--green-dim);
+      padding: 0.8rem 1rem; margin: 0.6rem 0;
+      font-size: 0.82rem; color: var(--cyan); line-height: 1.9; overflow-x: auto;
+    }
+    .eq-block .eq-label { color: var(--text-dim); font-size: 0.7rem; margin-bottom: 0.2rem; }
+    .eq-var   { color: var(--amber); }
+    .eq-op    { color: var(--green); }
+    .eq-param { color: var(--cyan); }
+
+    /* ── LOG ── */
+    .log-term {
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 0.8rem 1rem; font-size: 0.76rem; color: var(--text-dim);
+      max-height: 100px; overflow-y: auto; line-height: 1.9;
+    }
+    .log-term .ok   { color: var(--green); }
+    .log-term .info { color: var(--cyan); }
+    .log-term .warn { color: var(--amber); }
+
+    /* ── CHART WRAP ── */
+    .chart-wrap { background: var(--bg2); border: 1px solid var(--border); padding: 0.5rem; }
+    canvas { display: block; width: 100% !important; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .proj-hero  { grid-template-columns: 1fr; }
+      .proj-meta  { text-align: left; }
+      .stats-row  { grid-template-columns: repeat(2,1fr); }
+      .metric-row { grid-template-columns: 1fr; }
+      .pipeline   { flex-direction: column; }
+      .pipe-step:not(:last-child)::after { display: none; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .controls-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- Section Header -->
+  <div class="section-header reveal">
+    <span class="sh-prompt">marchel@sys:~$</span>
+    <span class="sh-cmd">exec ./projects/milk-spray-drying</span>
+    <span class="sh-args">--interactive --industry=kalbe-farma</span>
+  </div>
+
+  <!-- Hero -->
+  <div class="proj-hero reveal">
+    <div>
+      <div class="proj-tag">// PROJECT_DETAIL — INDUSTRIAL_ML · CFD · PROCESS_OPTIMIZATION</div>
+      <div class="proj-name">Milk Spray Drying<br>Parameter Optimization</div>
+      <div class="proj-sub">Machine Learning + CFD Simulation</div>
+    </div>
+    <div class="proj-meta">
+      <div><span style="color:var(--green)">ML</span> &nbsp;·&nbsp; <span style="color:var(--green)">CFD</span></div>
+      <div><span style="color:var(--green)">Python</span> &nbsp;·&nbsp; <span style="color:var(--green)">SciPy</span></div>
+      <div style="color:var(--text-dim)">PT. Kalbe Farma, Tbk.</div>
+      <div style="color:var(--text-dim)">2024 – 2025</div>
+    </div>
+  </div>
+
+  <div class="badges-row reveal">
+    <span class="badge badge-amber">CFD / Spray Drying</span>
+    <span class="badge badge-cyan">ODE / Euler Integration</span>
+    <span class="badge badge-green">Random Forest</span>
+    <span class="badge badge-green">Inverse ML Model</span>
+    <span class="badge badge-dim">Ranz-Marshall Correlation</span>
+    <span class="badge badge-dim">Rosin-Rammler Distribution</span>
+    <span class="badge badge-dim">Energy Optimization</span>
+    <span class="badge badge-dim">Python · NumPy · SciPy · sklearn</span>
+  </div>
+
+  <!-- Overview -->
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>PROJECT_OVERVIEW.md</div>
+    <div class="t-card-body" style="font-size:.82rem;color:var(--text-dim);line-height:1.9">
+      Proyek riset industri di <span style="color:var(--cyan)">PT. Kalbe Farma, Tbk.</span> untuk mengoptimasi konsumsi energi mesin
+      <span style="color:var(--amber)">spray dryer</span> dalam proses pengeringan susu bubuk. Pendekatan hybrid: simulasi fisika
+      berbasis CFD menggunakan persamaan diferensial parsial (model droplet evaporation, transfer panas, transfer massa),
+      diikuti <span style="color:var(--green)">inverse ML model</span> yang mengambil target kadar air produk akhir sebagai
+      input dan memberikan rekomendasi parameter operasi optimal — kebalikan dari pendekatan forward modeling konvensional.
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── PIPELINE ARSITEKTUR ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>ML_PIPELINE.arch</div>
+    <div class="t-card-body">
+      <div class="pipeline">
+        <div class="pipe-step">
+          <div class="pipe-num">01</div>
+          <div class="pipe-title">CFD Simulation</div>
+          <div class="pipe-desc">Physics-based spray dryer model: geometry, fluid properties, droplet ODE, Euler integration</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">02</div>
+          <div class="pipe-title">Dataset Gen</div>
+          <div class="pipe-desc">2000+ samples, parameter sweep: T_inlet, v_air, diameter, humidity, residence time</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">03</div>
+          <div class="pipe-title">Forward Model</div>
+          <div class="pipe-desc">Random Forest: params → final moisture, temperature, quality score</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">04</div>
+          <div class="pipe-title">Inverse Model</div>
+          <div class="pipe-desc">RF + GBM + MLP: target moisture → optimal operating parameters</div>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">05</div>
+          <div class="pipe-title">Optimization</div>
+          <div class="pipe-desc">scipy.minimize L-BFGS-B: fine-tune params untuk target moisture tertentu</div>
+        </div>
+      </div>
+      <div class="metric-row" style="margin-top:1rem">
+        <div class="metric-box">
+          <div class="metric-label">TRAINING SAMPLES</div>
+          <div class="metric-val" style="color:var(--cyan)">2,000+</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-top:.2rem">+ edge cases</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">BEST MODEL</div>
+          <div class="metric-val" style="color:var(--green)">Random Forest</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-top:.2rem">100 estimators</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-label">TARGET MOISTURE</div>
+          <div class="metric-val" style="color:var(--amber)">2 – 5 %</div>
+          <div style="font-size:.7rem;color:var(--text-dim);margin-top:.2rem">wet basis optimal</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulator Controls -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── INTERACTIVE DROPLET SIMULATOR ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.2rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>PARAMETER_CONTROLS.cfg</div>
+    <div class="t-card-body">
+      <div class="controls-grid" id="controls-grid"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.8rem">
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            <span class="ctrl-name">T_sim — Durasi Simulasi (s)</span>
+            <span class="ctrl-val" id="val-T">10</span>
+          </div>
+          <input type="range" id="slider-T" min="3" max="20" step="1" value="10">
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            <span class="ctrl-name">d₀ — Initial Droplet Diameter (μm)</span>
+            <span class="ctrl-val" id="val-d">70</span>
+          </div>
+          <input type="range" id="slider-d" min="20" max="150" step="5" value="70">
+        </div>
+      </div>
+      <div class="btns-row" style="margin-top:1rem">
+        <button class="btn btn-primary" id="btn-run">▶ RUN_SIMULATION</button>
+        <button class="btn btn-ghost"   id="btn-optimal">OPTIMAL PRESET</button>
+        <button class="btn btn-amber"   id="btn-reset">RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation Output Tabs -->
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>SIMULATION_OUTPUT.dat</div>
+    <div class="t-card-body" style="padding-top:.8rem">
+
+      <div class="tabs-bar">
+        <button class="tab-btn active" data-tab="drying">DRYING CURVE</button>
+        <button class="tab-btn" data-tab="chamber">CHAMBER FLOW</button>
+        <button class="tab-btn" data-tab="droplet">DROPLET SIZE</button>
+        <button class="tab-btn" data-tab="transfer">HEAT &amp; MASS</button>
+      </div>
+
+      <!-- Drying Curve -->
+      <div class="tab-panel active" id="tab-drying">
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-label">FINAL MOISTURE (wb)</div><div class="stat-val e" id="stat-mc">-</div></div>
+          <div class="stat-box"><div class="stat-label">FINAL TEMP (°C)</div><div class="stat-val i" id="stat-temp">-</div></div>
+          <div class="stat-box"><div class="stat-label">FINAL DIAMETER (μm)</div><div class="stat-val s" id="stat-diam">-</div></div>
+          <div class="stat-box"><div class="stat-label">QUALITY SCORE</div><div class="stat-val r" id="stat-qs">-</div></div>
+        </div>
+        <div style="margin-bottom:.8rem">
+          <div class="quality-label">
+            <span>QUALITY ASSESSMENT</span>
+            <span id="quality-verdict" style="color:var(--text-dim)">—</span>
+          </div>
+          <div class="quality-track">
+            <div class="quality-fill" id="quality-fill" style="width:0%"></div>
+          </div>
+          <div class="quality-zones">
+            <span style="color:#ff4040">OVERDRIED</span>
+            <span style="color:var(--green)">OPTIMAL (2–5%)</span>
+            <span style="color:var(--amber)">UNDERDRIED</span>
+          </div>
+        </div>
+        <div class="legend-row">
+          <div class="leg-item"><div class="leg-dot" style="background:var(--amber);box-shadow:var(--glow-a)"></div><span style="color:var(--amber)">Moisture Content (wb %)</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:#ff4040"></div><span style="color:#ff4040">Temperature (°C scaled)</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--cyan)"></div><span style="color:var(--cyan)">Evaporation Rate (scaled)</span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-drying"></canvas></div>
+      </div>
+
+      <!-- Chamber Flow -->
+      <div class="tab-panel" id="tab-chamber">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.8rem">
+          Visualisasi 2D axisymmetric geometry spray dryer (Kieviet &amp; Kerkhof) dengan droplet trajectory berdasarkan parameter saat ini.
+          Warna droplet = suhu (biru→merah = dingin→panas).
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:1rem;align-items:start">
+          <div>
+            <div style="font-family:var(--font-pixel);font-size:.42rem;color:var(--text-dim);letter-spacing:.08em;margin-bottom:.6rem">CHAMBER SPECS</div>
+            <table style="width:100%;font-size:.76rem;border-collapse:collapse">
+              <tr><td style="color:var(--text-dim);padding:.2rem 0">Cylinder D</td><td style="color:var(--green);text-align:right">1.0 m</td></tr>
+              <tr><td style="color:var(--text-dim);padding:.2rem 0">Cylinder H</td><td style="color:var(--green);text-align:right">1.5 m</td></tr>
+              <tr><td style="color:var(--text-dim);padding:.2rem 0">Cone H</td><td style="color:var(--green);text-align:right">1.0 m</td></tr>
+              <tr><td style="color:var(--text-dim);padding:.2rem 0">Cone Bottom D</td><td style="color:var(--green);text-align:right">0.3 m</td></tr>
+              <tr><td style="color:var(--text-dim);padding:.2rem 0">Spray Angle</td><td style="color:var(--amber);text-align:right">76°</td></tr>
+              <tr><td style="color:var(--text-dim);padding:.2rem 0">Nozzle Vel.</td><td style="color:var(--cyan);text-align:right">59 m/s</td></tr>
+            </table>
+          </div>
+          <div class="chart-wrap" style="min-height:320px">
+            <canvas id="chart-chamber"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Droplet Size -->
+      <div class="tab-panel" id="tab-droplet">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.8rem">
+          Distribusi ukuran droplet menggunakan model <span style="color:var(--cyan)">Rosin-Rammler</span>
+          dengan parameter mean diameter dan spread parameter yang dapat dikonfigurasi.
+        </div>
+        <div class="grid-2" style="gap:1rem;margin-bottom:.8rem">
+          <div class="ctrl-group">
+            <div class="ctrl-label">
+              <span><span class="ctrl-sym">d̄</span> <span class="ctrl-name">Mean Diameter (μm)</span></span>
+              <span class="ctrl-val" id="val-dmean">70.5</span>
+            </div>
+            <input type="range" id="slider-dmean" min="20" max="120" step="0.5" value="70.5">
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">
+              <span><span class="ctrl-sym">n</span> <span class="ctrl-name">Spread Parameter</span></span>
+              <span class="ctrl-val" id="val-spread">2.09</span>
+            </div>
+            <input type="range" id="slider-spread" min="1.0" max="4.0" step="0.01" value="2.09">
+          </div>
+        </div>
+        <div class="legend-row">
+          <div class="leg-item"><div class="leg-dot" style="background:#00aaff"></div><span style="color:#00aaff">PDF (Probability Density)</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div><span style="color:var(--green)">CDF (Cumulative)</span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-rosin"></canvas></div>
+        <div id="rosin-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-top:.8rem;font-size:.76rem"></div>
+      </div>
+
+      <!-- Heat & Mass Transfer -->
+      <div class="tab-panel" id="tab-transfer">
+        <div style="font-size:.78rem;color:var(--text-dim);margin-bottom:.8rem">
+          Koefisien transfer panas dan massa menggunakan <span style="color:var(--cyan)">korelasi Ranz-Marshall</span>:
+          Nu = 2 + 0.6·Re<sup>0.5</sup>·Pr<sup>1/3</sup> dan Sh = 2 + 0.6·Re<sup>0.5</sup>·Sc<sup>1/3</sup>
+        </div>
+        <div class="legend-row">
+          <div class="leg-item"><div class="leg-dot" style="background:#ff4040"></div><span style="color:#ff4040">v=5 m/s</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--amber)"></div><span style="color:var(--amber)">v=15 m/s</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div><span style="color:var(--green)">v=30 m/s</span></div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--cyan)"></div><span style="color:var(--cyan)">v=59 m/s</span></div>
+        </div>
+        <div class="grid-2" style="gap:1rem">
+          <div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.4rem;letter-spacing:.06em">NUSSELT NUMBER vs Re</div>
+            <div class="chart-wrap"><canvas id="chart-nu"></canvas></div>
+          </div>
+          <div>
+            <div style="font-size:.72rem;color:var(--text-dim);margin-bottom:.4rem;letter-spacing:.06em">SHERWOOD NUMBER vs Re</div>
+            <div class="chart-wrap"><canvas id="chart-sh"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Physics Model -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── PHYSICS MODEL ──</span></div>
+
+  <div class="grid-2 reveal" style="gap:1.2rem;margin-bottom:1.5rem">
+    <div class="t-card">
+      <div class="t-card-header"><div class="t-card-dot"></div>DROPLET_EVAPORATION.ode</div>
+      <div class="t-card-body">
+        <div class="eq-block">
+          <div class="eq-label">Evaporation Rate (Ranz-Marshall)</div>
+          <span class="eq-var">ṁ</span> <span class="eq-op">=</span> <span class="eq-param">k_m · A · (P_surf − P_bulk)</span> / (<span class="eq-param">R·T</span>)
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">Heat Transfer (Net)</div>
+          <span class="eq-var">Q_net</span> <span class="eq-op">=</span> <span class="eq-param">h·A·(T_air − T)</span> <span class="eq-op">−</span> <span class="eq-param">ṁ·λ</span>
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">Moisture Change (dry basis)</div>
+          <span class="eq-var">dX/dt</span> <span class="eq-op">=</span> <span class="eq-op">−</span><span class="eq-param">ṁ / m_solids</span>
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">Activity Coefficient (bound water)</div>
+          <span class="eq-var">a_w</span> <span class="eq-op">=</span> 1.0 &nbsp;<span style="color:var(--text-dim)">if X &gt; X_crit</span><br>
+          <span class="eq-var">a_w</span> <span class="eq-op">=</span> <span class="eq-param">X / X_crit</span> &nbsp;<span style="color:var(--text-dim)">otherwise</span>
+        </div>
+      </div>
+    </div>
+    <div class="t-card">
+      <div class="t-card-header"><div class="t-card-dot"></div>QUALITY_SCORE.func</div>
+      <div class="t-card-body">
+        <div style="font-size:.8rem;color:var(--text-dim);line-height:1.9;margin-bottom:.8rem">
+          Fungsi kualitas gabungan yang membobot kadar air akhir (70%) dan suhu produk (30%).
+          Target produk susu bubuk berkualitas: kadar air <span style="color:var(--green)">2–5% wb</span>,
+          suhu produk <span style="color:var(--cyan)">&lt; 60°C</span> untuk menjaga integritas protein.
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">Moisture Score</div>
+          100 &nbsp;<span style="color:var(--text-dim)">if 2% ≤ X_wb ≤ 5%</span><br>
+          max(0, 100 − <span class="eq-param">|X − X_target|·scale</span>) &nbsp;<span style="color:var(--text-dim)">otherwise</span>
+        </div>
+        <div class="eq-block">
+          <div class="eq-label">Combined Quality Score</div>
+          <span class="eq-var">Q</span> <span class="eq-op">=</span> <span class="eq-param">0.7·S_moisture</span> + <span class="eq-param">0.3·S_temperature</span>
+        </div>
+        <div style="margin-top:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.6rem;font-size:.76rem">
+          <div style="background:var(--bg2);border:1px solid rgba(0,255,65,.2);padding:.5rem">
+            <div style="color:var(--text-dim);font-size:.65rem;margin-bottom:.2rem">OVERDRIED</div>
+            <div style="color:#ff4040">X_wb &lt; 2%</div>
+            <div style="color:var(--text-dim);font-size:.7rem">Protein denaturasi</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid rgba(0,255,65,.2);padding:.5rem">
+            <div style="color:var(--text-dim);font-size:.65rem;margin-bottom:.2rem">UNDERDRIED</div>
+            <div style="color:var(--amber)">X_wb &gt; 5%</div>
+            <div style="color:var(--text-dim);font-size:.7rem">Caking, degradasi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inverse ML -->
+  <div class="sec-divider reveal"><span class="sec-divider-txt">── INVERSE ML MODEL ──</span></div>
+
+  <div class="t-card reveal" style="margin-bottom:1.5rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>INVERSE_OPTIMIZER.ml</div>
+    <div class="t-card-body">
+      <div style="font-size:.8rem;color:var(--text-dim);line-height:1.9;margin-bottom:1.2rem">
+        Model invers menerima <span style="color:var(--green)">target kadar air</span> sebagai input dan mengeluarkan
+        <span style="color:var(--cyan)">parameter operasi optimal</span>. Dilatih dengan 3 model berbeda dan dipilih yang terbaik berdasarkan avg R².
+      </div>
+      <div style="margin-bottom:1.2rem">
+        <div style="font-family:var(--font-pixel);font-size:.42rem;color:var(--text-dim);letter-spacing:.08em;margin-bottom:.8rem">SET TARGET MOISTURE → GET OPTIMAL PARAMS</div>
+        <div style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap">
+          <div class="ctrl-group" style="flex:1;min-width:200px">
+            <div class="ctrl-label">
+              <span class="ctrl-name">Target Moisture Content (%wb)</span>
+              <span class="ctrl-val" id="val-target">3.5</span>
+            </div>
+            <input type="range" id="slider-target" min="1" max="8" step="0.1" value="3.5">
+          </div>
+          <button class="btn btn-primary" id="btn-predict">▶ PREDICT_PARAMS</button>
+        </div>
+      </div>
+      <div id="inverse-results" style="display:none">
+        <div style="font-family:var(--font-pixel);font-size:.42rem;color:var(--green);letter-spacing:.08em;margin-bottom:.8rem">RECOMMENDED OPERATING PARAMETERS</div>
+        <div class="controls-grid" id="inverse-grid" style="gap:.6rem"></div>
+        <div class="chart-wrap" style="margin-top:1rem">
+          <canvas id="chart-recommendation"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="t-card reveal" style="margin-bottom:2rem">
+    <div class="t-card-header"><div class="t-card-dot"></div>SIMULATION_LOG.out</div>
+    <div class="log-term" id="log-terminal">
+      <span style="color:var(--text-dim)">// Tekan RUN_SIMULATION untuk memulai...</span>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+</body>
+</html>

@@ -117,7 +117,7 @@
         entEl.style.display = 'block';
         const dismiss = () => {
           if (typeof SFX !== "undefined" && SFX.playClick) SFX.playClick();
-          overlay.style.transition = 'opacity 0.6s';
+          overlay.style.transition = 'opacity 0.6 s';
           overlay.style.opacity = '0';
           setTimeout(() => { overlay.remove(); onDone(); }, 620);
         };

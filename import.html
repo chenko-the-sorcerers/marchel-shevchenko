@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AXION IMPORT — Seed Supabase</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <link rel="stylesheet" href="styles/globals.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    body { cursor:default; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:2rem; }
+    #cursor,#cursor-trail{display:none}
+    .wrap{max-width:640px;width:100%}
+    .sub{font-size:0.82rem;color:var(--text-dim);margin-bottom:1.2rem;line-height:1.7}
+    .cfg-row{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem}
+    .form-group{display:flex;flex-direction:column;gap:0.3rem}
+    .form-label{font-size:0.75rem;color:var(--text-dim)}
+    .btn-row{display:flex;gap:0.7rem;margin-bottom:1rem;flex-wrap:wrap}
+    .progress-wrap{margin:1rem 0;display:none}
+    .progress-bar-track{height:8px;background:var(--bg2);border:1px solid var(--border-hi);margin-bottom:0.4rem}
+    .progress-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dark),var(--green));transition:width 0.3s;box-shadow:0 0 8px var(--green)}
+    .log-box{background:var(--bg2);border:1px solid var(--border-hi);padding:0.8rem;height:260px;overflow-y:auto;font-size:0.78rem;line-height:1.8;font-family:var(--font-mono)}
+    .ok{color:var(--green)} .err{color:var(--red)} .info{color:var(--cyan)} .warn{color:var(--amber)}
+    .done-box{background:rgba(0,255,65,0.06);border:1px solid var(--green);padding:1rem;margin-top:1rem;font-size:0.82rem;color:var(--green);display:none}
+    code{color:var(--amber);font-family:var(--font-mono)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="t-card">
+    <div class="t-card-header"><div class="t-card-dot"></div>AXION DATA IMPORTER</div>
+    <div class="t-card-body">
+      <div class="sub">
+        Import semua data dari <code>cv-data.js</code> ke Supabase.<br>
+        <strong style="color:var(--red)">⚠ Kalau data dobel: klik CLEAR FIRST, baru IMPORT.</strong>
+      </div>
+
+      <div class="cfg-row">
+        <div class="form-group">
+          <label class="form-label">Supabase URL</label>
+          <input type="text" class="r-input" id="cfg-url" placeholder="https://xxxx.supabase.co"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Anon Key</label>
+          <input type="password" class="r-input" id="cfg-key" placeholder="eyJhbGc..."/>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-import">▶ IMPORT</button>
+        <button class="btn btn-ghost"   id="btn-check">CHECK COUNTS</button>
+        <button class="btn" id="btn-clear" style="background:transparent;border:1px solid var(--red);color:var(--red)">⚠ CLEAR ALL FIRST</button>
+        <a href="admin.html" class="btn btn-amber">→ ADMIN</a>
+      </div>
+
+      <div class="progress-wrap" id="progress-wrap">
+        <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.25rem">
+          <span id="prog-label">0 / 0</span>
+        </div>
+        <div class="progress-bar-track"><div class="progress-bar-fill" id="prog-fill"></div></div>
+      </div>
+
+      <div class="log-box" id="log-box">
+        <div class="info">// Ready. Klik CHECK dulu untuk lihat kondisi database.</div>
+      </div>
+
+      <div class="done-box" id="done-box">
+        ✓ Import selesai! Buka <a href="admin.html" style="color:var(--green)">admin.html</a> untuk manage data.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="lib/cv-data.js"></script>
+<script>
+let SB = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = JSON.parse(localStorage.getItem('axion_admin_cfg') || '{}');
+  if (saved.url) document.getElementById('cfg-url').value = saved.url;
+  if (saved.key) document.getElementById('cfg-key').value = saved.key;
+
+  document.getElementById('btn-import').addEventListener('click', startImport);
+  document.getElementById('btn-clear').addEventListener('click', clearAll);
+  document.getElementById('btn-check').addEventListener('click', checkCounts);
+});
+
+const TABLES = ['experience','achievements','projects','talks','publications'];
+
+function log(msg, cls='info') {
+  const box = document.getElementById('log-box');
+  const d = document.createElement('div');
+  d.className = cls; d.textContent = msg;
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() { document.getElementById('log-box').innerHTML = ''; }
+
+async function connect() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const key = document.getElementById('cfg-key').value.trim();
+  if (!url || !key) { log('ERROR: Isi URL dan key dulu', 'err'); return null; }
+  try {
+    const client = window.supabase.createClient(url, key);
+    const { error } = await client.from('experience').select('id').limit(1);
+    if (error) throw error;
+    localStorage.setItem('axion_admin_cfg', JSON.stringify({ url, key }));
+    return client;
+  } catch(e) { log(`ERROR: ${e.message}`, 'err'); return null; }
+}
+
+/* ── CHECK COUNTS ── */
+async function checkCounts() {
+  clearLog();
+  SB = await connect(); if (!SB) return;
+  log('[CHECK] Current row counts:', 'info');
+  for (const tbl of TABLES) {
+    const { data, error } = await SB.from(tbl).select('id');
+    if (error) log(`  ${tbl}: ERROR - ${error.message}`, 'err');
+    else log(`  ${tbl}: ${data.length} rows`, data.length > 0 ? 'ok' : 'warn');
+  }
+}
+
+/* ── CLEAR ALL ── */
+async function clearAll() {
+  if (!confirm('Hapus SEMUA data dari semua tabel? Tidak bisa di-undo!')) return;
+  clearLog();
+  SB = await connect(); if (!SB) return;
+  log('[CLEAR] Menghapus semua data...', 'warn');
+  for (const tbl of TABLES) {
+    // Delete all rows by matching id not equal to impossible value
+    const { error } = await SB.from(tbl).delete().gte('sort_order', -999999);
+    if (error) {
+      // Fallback: delete with truncate via RPC if available
+      log(`  ${tbl}: ${error.message} — coba cara lain...`, 'warn');
+      const { data: rows } = await SB.from(tbl).select('id');
+      if (rows?.length) {
+        const ids = rows.map(r => r.id);
+        const { error: e2 } = await SB.from(tbl).delete().in('id', ids);
+        if (e2) log(`  ${tbl}: GAGAL - ${e2.message}`, 'err');
+        else log(`  ${tbl}: cleared ${ids.length} rows ✓`, 'ok');
+      } else {
+        log(`  ${tbl}: already empty`, 'info');
+      }
+    } else {
+      log(`  ${tbl}: cleared ✓`, 'ok');
+    }
+  }
+  log('[DONE] Semua tabel kosong. Sekarang klik IMPORT.', 'ok');
+}
+
+/* ── IMPORT ── */
+async function startImport() {
+  clearLog();
+  document.getElementById('done-box').style.display = 'none';
+  SB = await connect(); if (!SB) return;
+
+  // Check if already has data
+  const { data: existing } = await SB.from('experience').select('id').limit(1);
+  if (existing?.length) {
+    log('[WARN] Tabel experience sudah ada data!', 'warn');
+    log('[WARN] Klik CLEAR ALL FIRST dulu, baru IMPORT.', 'warn');
+    log('[WARN] Atau klik IMPORT lagi kalau mau tambah duplikat (tidak disarankan).', 'warn');
+    if (!confirm('Data sudah ada. Lanjut import? (akan dobel-dobel)')) return;
+  }
+
+  document.getElementById('btn-import').disabled = true;
+  document.getElementById('progress-wrap').style.display = 'block';
+
+  log('[SYS] Memulai import...', 'info');
+
+  const batches = buildBatches();
+  const total = Object.values(batches).reduce((s, a) => s + a.length, 0);
+  let done = 0;
+
+  function setProgress(d, t) {
+    document.getElementById('prog-label').textContent = `${d} / ${t}`;
+    document.getElementById('prog-fill').style.width = t ? `${(d/t)*100}%` : '0%';
+  }
+  setProgress(0, total);
+
+  for (const [tbl, rows] of Object.entries(batches)) {
+    if (!rows.length) { log(`[SKIP] ${tbl}: kosong`, 'warn'); continue; }
+    log(`[${tbl.toUpperCase()}] Inserting ${rows.length} rows...`, 'info');
+
+    // Insert chunk by chunk
+    for (let i = 0; i < rows.length; i += 15) {
+      const chunk = rows.slice(i, i+15);
+      const { error } = await SB.from(tbl).insert(chunk);
+      if (error) {
+        log(`  ✗ Error: ${error.message}`, 'err');
+      } else {
+        chunk.forEach(r => log(`  ✓ ${r.title || r.role || '—'}`, 'ok'));
+      }
+      done += chunk.length;
+      setProgress(done, total);
+      await new Promise(r => setTimeout(r, 80));
+    }
+  }
+
+  log('[SYS] ████████████████████ SELESAI ✓', 'ok');
+  document.getElementById('done-box').style.display = 'block';
+  document.getElementById('btn-import').disabled = false;
+}
+
+/* ── BUILD ROWS (no random ID — let Supabase auto-generate) ── */
+function buildBatches() {
+  return {
+    experience: CV.experience.map((e, i) => ({
+      company:     e.company,
+      location:    e.location || null,
+      role:        e.role,
+      period:      e.period,
+      description: e.desc || null,
+      tags:        e.tags || [],
+      is_current:  (e.period||'').toLowerCase().includes('present'),
+      sort_order:  i,
+    })),
+
+    achievements: CV.achievements.map((a, i) => ({
+      year:       a.year,
+      title:      a.title,
+      org:        a.org || null,
+      sort_order: i,
+    })),
+
+    projects: CV.projects.map((p, i) => ({
+      num:         p.num || String(i+1).padStart(3,'0'),
+      title:       p.title,
+      tag:         p.tag || null,
+      color:       p.color || 'green',
+      description: p.desc || null,
+      stack:       p.stack || [],
+      event:       p.event || null,
+      year:        p.year || null,
+      sort_order:  i,
+    })),
+
+    talks: [
+      ...(CV.talks.seminars||[]).map((t,i)=>({
+        title:t.title, host:t.host, year:t.year, type:'seminar', sort_order:i
+      })),
+      ...(CV.talks.workshops||[]).map((t,i)=>({
+        title:t.title, host:t.host, year:t.year, type:'workshop', sort_order:100+i
+      })),
+      ...(CV.talks.publicLectures||[]).map((t,i)=>({
+        title:t.title, host:t.host, year:t.year, type:'lecture', sort_order:200+i
+      })),
+      ...(CV.talks.judgeAndMentor||[]).map((t,i)=>({
+        title:t.title, host:t.host, year:t.year, type:t.type||'mentor', sort_order:300+i
+      })),
+    ],
+
+    publications: [],
+  };
+}
+</script>
+</body>
+</html>

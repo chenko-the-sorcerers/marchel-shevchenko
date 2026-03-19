@@ -340,10 +340,18 @@ function renderFeatured() {
   const grid = document.getElementById('feat-grid');
   if (!grid) return;
   const cm = { green:'badge-green', amber:'badge-amber', cyan:'badge-cyan' };
-  CV.projects.slice(0,6).forEach((p,i) => {
+  // Show featured projects first (href/interactive), then fill up to 6 from top projects
+  const featured  = CV.projects.filter(p => p.featured);
+  const rest      = CV.projects.filter(p => !p.featured).slice(0, 6 - featured.length);
+  const toShow    = [...featured, ...rest].slice(0, 6);
+  toShow.forEach((p,i) => {
     const card = document.createElement('div');
     card.className = 't-card reveal';
     card.style.transitionDelay = (i*0.06)+'s';
+    if (p.href) card.style.cursor = 'none';
+    const viewBtn = p.href
+      ? `<div style="margin-top:.6rem"><a href="${p.href}" style="display:inline-flex;align-items:center;gap:.3rem;font-family:var(--font-pixel);font-size:.4rem;color:var(--green);border:1px solid var(--green-dark);padding:.2rem .5rem;letter-spacing:.06em;background:rgba(0,255,65,.04);transition:all .2s">VIEW PROJECT ▶</a></div>`
+      : '';
     card.innerHTML = `
       <div class="t-card-header">
         <div class="t-card-dot"></div>
@@ -359,6 +367,7 @@ function renderFeatured() {
         <div class="text-dim" style="font-size:0.72rem;margin-top:0.7rem;border-top:1px solid var(--border);padding-top:0.5rem;">
           ${p.event} &nbsp;·&nbsp; ${p.year}
         </div>
+        ${viewBtn}
       </div>`;
     card.addEventListener('mouseenter', () => {
       const t = card.querySelector('.font-vt');

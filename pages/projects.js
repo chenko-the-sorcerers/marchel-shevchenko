@@ -19,6 +19,9 @@ function renderProjects() {
     card.className = 'proj-card reveal';
     card.dataset.tag = p.tag;
     card.style.transitionDelay = (i * 0.04) + 's';
+    const viewBtn = p.href
+      ? `<a href="${p.href}" class="proj-link" style="display:inline-flex;align-items:center;gap:.3rem;font-family:var(--font-pixel);font-size:.4rem;color:var(--green);border:1px solid var(--green-dark);padding:.2rem .5rem;margin-top:.5rem;letter-spacing:.06em;transition:all .2s;background:rgba(0,255,65,.04)">VIEW ▶</a>`
+      : '';
     card.innerHTML = `
       <div class="proj-head">
         <span class="proj-num">// ${p.num}</span>
@@ -29,6 +32,7 @@ function renderProjects() {
         <div class="proj-desc">${p.desc}</div>
         <div class="proj-stack">${p.stack.map(t => `<span class="badge badge-dim">${t}</span>`).join('')}</div>
         <div class="proj-footer"><span class="event">${p.event}</span> &nbsp;·&nbsp; ${p.year}</div>
+        ${viewBtn}
       </div>`;
     card.addEventListener('mouseenter', () => {
       const t = card.querySelector('.proj-title');

@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IndoLLNet v1.0 — Data Sorcerers</title>
+  <meta name="description" content="IndoLLNet v1.0 — A Novel Python CNN Algorithm for Javanese, Sundanese, and Lampung script recognition. 95–98% accuracy. PyCon US 2025." />
+  <meta name="author" content="Marchel Andrian Shevchenko / Data Sorcerers" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>ꦲ</text></svg>" />
+
+  <!-- VT323 terminal font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+
+  <!-- Noto Serif Javanese for actual script characters -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Javanese&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/styles/indollnet.css" />
+  <script src="components/audio.js" defer></script>
+
+  <style>
+    /* Boot terminal box */
+    .boot-terminal-wrap {
+      background: rgba(2,9,5,0.95);
+      border: 1px solid var(--border-hi);
+    }
+    .boot-term-bar {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: rgba(0,10,4,0.92);
+      border-bottom: 1px solid var(--border-hi);
+      padding: 0.4rem 1rem;
+      font-size: 0.75rem; color: var(--text-dim);
+    }
+    .win-btn { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .win-btn.r { background: #ff5f57; }
+    .win-btn.y { background: #febc2e; }
+    .win-btn.g { background: #28c840; }
+    #boot-terminal {
+      padding: 1.2rem 1.4rem;
+      min-height: 160px;
+      font-size: 0.8rem;
+      color: var(--green);
+      line-height: 1.9;
+      font-family: var(--font-mono);
+    }
+    .boot-line { margin: 0; }
+
+    /* Abstract block */
+    .abstract-text {
+      font-size: 0.88rem;
+      line-height: 2;
+      color: var(--text);
+    }
+    .abstract-text .highlight { color: var(--text-bright); }
+    .abstract-text .green    { color: var(--green); }
+    .abstract-text .amber    { color: var(--amber); }
+    .abstract-text .cyan     { color: var(--cyan); }
+
+    /* KV rows */
+    .kv-row {
+      display: flex; gap: 0.5rem;
+      padding: 0.45rem 0;
+      border-bottom: 1px dotted var(--border);
+      font-size: 0.84rem; line-height: 1.5;
+    }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-key { color: var(--text-dim); min-width: 110px; flex-shrink: 0; }
+    .kv-val { color: var(--text-bright); }
+
+    /* Javanese chars */
+    .j-char { font-family: 'Noto Serif Javanese', serif; font-size: 1.6rem; color: var(--text-bright); }
+
+    /* Horizontal scroll table */
+    .table-scroll { overflow-x: auto; }
+
+    /* Section spacers */
+    .section-gap { margin-top: 3.5rem; }
+
+    /* Timeline dot on hero */
+    .event-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.7rem; color: var(--amber);
+      border: 1px solid var(--amber-dim);
+      padding: 0.2rem 0.7rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .event-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--amber);
+      animation: status-blink 1.5s ease-in-out infinite;
+    }
+
+    /* Three-feature row */
+    .feature-card {
+      background: var(--panel);
+      border: 1px solid var(--border-hi);
+      padding: 1.2rem 1rem;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+    .feature-card:hover::before { transform: scaleX(1); }
+    .feature-card:hover { border-color: var(--green); box-shadow: 0 0 20px rgba(0,255,65,0.07); }
+    .feature-card.amber::before { background: var(--amber); }
+    .feature-card.amber:hover   { border-color: var(--amber); box-shadow: 0 0 20px rgba(255,179,0,0.07); }
+    .feature-card.cyan::before  { background: var(--cyan); }
+    .feature-card.cyan:hover    { border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,229,255,0.07); }
+    .feature-icon {
+      font-family: var(--font-vt);
+      font-size: 2.2rem;
+      line-height: 1;
+      margin-bottom: 0.6rem;
+      color: var(--green);
+    }
+    .feature-card.amber .feature-icon { color: var(--amber); }
+    .feature-card.cyan  .feature-icon { color: var(--cyan); }
+    .feature-title {
+      font-size: 0.78rem;
+      color: var(--text-bright);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+    .feature-desc {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.75;
+    }
+
+    /* Page canvas bg */
+    #bg-canvas {
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+    .page-wrap { position: relative; z-index: 1; }
+    .stats-strip { position: relative; z-index: 1; }
+    .project-hero { position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- BG Particle Canvas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- Custom Cursor -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ══ NAVBAR ══ -->
+  <nav id="navbar">
+    <a class="nav-logo" href="index.html">MARCHEL<span>.</span>SYS</a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="projects.html" class="active">Projects</a></li>
+      <li><a href="experience.html">Experience</a></li>
+      <li><a href="skills.html">Skills</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="research.html">Research</a></li>
+      <li><a href="chat.html">AI_CHAT</a></li>
+    </ul>
+    <div class="nav-status">
+      <div class="status-dot"></div>
+      <span>INDOLLNET&nbsp;v1.0</span>
+    </div>
+    <div class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══ -->
+  <section class="project-hero">
+    <div class="project-kicker reveal"><span>◆</span>&nbsp;Data Sorcerers &nbsp;/&nbsp; PyCon US 2025 &nbsp;/&nbsp; Pittsburgh PA</div>
+
+    <h1 class="project-title reveal" style="transition-delay:0.05s">
+      IndoLLNet&nbsp;<span class="version">v1.0</span>
+    </h1>
+
+    <p class="project-subtitle reveal" style="transition-delay:0.1s">
+      A Novel Python CNN Algorithm Helping Increase Literacy of Traditional Culture for Modern Society —
+      recognizing handwritten Javanese, Sundanese &amp; Lampung scripts with
+      <span class="text-amber">95–98% accuracy</span>.
+    </p>
+
+    <div class="hero-meta reveal" style="transition-delay:0.15s">
+      <span class="event-badge"><span class="dot"></span>PyConUS 2025</span>
+      <span class="tag tag-green">CNN · Computer Vision</span>
+      <span class="tag tag-amber">NLP · OCR</span>
+      <span class="tag tag-cyan">Cultural Preservation</span>
+      <span class="tag">Python</span>
+      <span class="tag">TensorFlow</span>
+    </div>
+
+    <div class="hero-btns reveal" style="transition-delay:0.2s">
+      <a href="https://github.com/datasorcerers" target="_blank" class="btn btn-primary">◆ VIEW REPO</a>
+      <a href="projects.html" class="btn btn-ghost">← ALL PROJECTS</a>
+      <a href="contact.html" class="btn btn-amber">COLLABORATE ▶</a>
+    </div>
+  </section>
+
+  <!-- ══ STATS STRIP ══ -->
+  <div class="stats-strip">
+    <div class="stats-inner">
+      <div class="stat-item reveal">
+        <div class="stat-num counter" data-target="122" data-suffix="+">0+</div>
+        <div class="stat-lbl">Contributors</div>
+      </div>
+      <div class="stat-item reveal" style="transition-delay:0.05s">
+        <div class="stat-num">95–98<span style="font-size:1.2rem">%</span></div>
+        <div class="stat-lbl">Accuracy</div>
+      </div>
+      <div class="stat-item reveal" style="transition-delay:0.1s">
+        <div class="stat-num counter" data-target="3" data-suffix=" Scripts">0</div>
+        <div class="stat-lbl">Scripts Covered</div>
+      </div>
+      <div class="stat-item reveal" style="transition-delay:0.15s">
+        <div class="stat-num counter" data-target="1" data-prefix="" data-suffix="M+">0</div>
+        <div class="stat-lbl">App Downloads</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE CONTENT ══ -->
+  <div class="page-wrap">
+
+    <!-- ─── SECTION: SYSTEM BOOT / ABSTRACT ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./indollnet/abstract.md</span>
+    </div>
+
+    <div class="two-col">
+
+      <!-- Boot Terminal -->
+      <div class="boot-terminal-wrap reveal">
+        <div class="boot-term-bar">
+          <span class="win-btn r"></span>
+          <span class="win-btn y"></span>
+          <span class="win-btn g"></span>
+          <span style="margin-left:0.4rem">indollnet@sys:~$ ./boot.sh</span>
+        </div>
+        <div id="boot-terminal"></div>
+      </div>
+
+      <!-- Abstract card -->
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>ABSTRACT.MD</div>
+        <div class="t-card-body">
+          <p class="abstract-text">
+            The <span class="amber">2021 Javanese Script Congress</span> proposed replacing Latin script
+            with Javanese script in public life across <span class="highlight">Yogyakarta</span>.
+            However, this faces significant challenges due to the lack of widespread
+            <span class="green">literacy in Javanese</span>, especially among younger generations.
+            <br><br>
+            <strong class="text-bright">IndoLLNet</strong> introduces a CNN-based framework
+            for <span class="green">handwritten character recognition</span> covering
+            <span class="amber">Javanese, Sundanese, and Lampung</span> scripts —
+            handling diacritics <span class="cyan">(sandhangan)</span>, conjuncts
+            <span class="cyan">(pasangan)</span>, numerals, and all six vowel sounds.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION: PROBLEM STATEMENT ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./problem.log</span>
+      <span class="sh-args">--stderr</span>
+    </div>
+
+    <div class="three-col">
+      <div class="problem-card reveal">
+        <div class="p-title">⚠ Unicode Limitation</div>
+        Javanese Unicode block has <strong class="text-amber">limited slots</strong>, making it
+        impossible to represent all complex glyph combinations through text encoding alone.
+        Image-based recognition is necessary.
+      </div>
+      <div class="problem-card reveal" style="transition-delay:0.07s">
+        <div class="p-title">⚠ Translation Failures</div>
+        Existing apps misread <strong class="text-amber">sandhangan</strong> combinations —
+        e.g., confusing "pepet" with "taling", corrupting words like <em>presiden</em>
+        when typed in Javanese script.
+      </div>
+      <div class="problem-card reveal" style="transition-delay:0.14s">
+        <div class="p-title">⚠ Literacy Gap</div>
+        Younger generations, local &amp; foreign tourists, and digital platform users
+        lack access to <strong class="text-amber">real-time image-to-text</strong>
+        tools for traditional Nusantara scripts.
+      </div>
+    </div>
+
+    <!-- ─── SECTION: FEATURES ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">ls ./features/</span>
+      <span class="sh-args">--verbose</span>
+    </div>
+
+    <div class="three-col">
+      <div class="feature-card reveal">
+        <div class="feature-icon">ꦲ</div>
+        <div class="feature-title">Multi-Script Support</div>
+        <div class="feature-desc">Recognizes Javanese, Sundanese, and Lampung characters including full conjunct (pasangan) and diacritic (sandhangan) combinations.</div>
+      </div>
+      <div class="feature-card amber reveal" style="transition-delay:0.07s">
+        <div class="feature-icon">◈</div>
+        <div class="feature-title">Word-Level OCR</div>
+        <div class="feature-desc">Goes beyond single character recognition — identifies entire words in context, handling real-world handwriting variation across 122+ contributors.</div>
+      </div>
+      <div class="feature-card cyan reveal" style="transition-delay:0.14s">
+        <div class="feature-icon">◎</div>
+        <div class="feature-title">Vowel Disambiguation</div>
+        <div class="feature-desc">Precisely differentiates all six vowel sounds: a, i, u, e, é, o — a critical distinction that previous tools consistently failed to handle.</div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION: CNN ARCHITECTURE ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./model/architecture.json</span>
+    </div>
+
+    <div class="two-col">
+      <!-- Pipeline -->
+      <div class="t-card reveal">
+        <div class="t-card-header"><div class="t-card-dot"></div>CNN PIPELINE</div>
+        <div class="t-card-body">
+          <div class="pipeline">
+            <div class="pipe-step">
+              <span class="pipe-icon">⬛</span>
+              INPUT<br>IMAGE
+            </div>
+            <div class="pipe-arrow">▶</div>
+            <div class="pipe-step">
+              <span class="pipe-icon">▦</span>
+              PATCH<br>CROP
+            </div>
+            <div class="pipe-arrow">▶</div>
+            <div class="pipe-step amber">
+              <span class="pipe-icon">◱</span>
+              RESIZE<br>11×8px
+            </div>
+            <div class="pipe-arrow">▶</div>
+            <div class="pipe-step">
+              <span class="pipe-icon">⊞</span>
+              CONV<br>+BIAS
+            </div>
+            <div class="pipe-arrow">▶</div>
+            <div class="pipe-step cyan">
+              <span class="pipe-icon">◈</span>
+              ReLU<br>+POOL
+            </div>
+            <div class="pipe-arrow">▶</div>
+            <div class="pipe-step amber">
+              <span class="pipe-icon">◎</span>
+              CLASS<br>OUTPUT
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- CNN Layer Visualization -->
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:0.6rem;letter-spacing:1px;">LAYER DEPTH VISUALIZATION</div>
+          <div class="cnn-viz">
+            <div class="cnn-layer">
+              <div class="cnn-block" style="height:80px"></div>
+              <div class="cnn-label">Input<br>11×8</div>
+            </div>
+            <div class="cnn-arrow">▶</div>
+            <div class="cnn-layer">
+              <div class="cnn-block" style="height:64px"></div>
+              <div class="cnn-block" style="height:64px;margin-top:2px"></div>
+              <div class="cnn-label">Conv<br>×2</div>
+            </div>
+            <div class="cnn-arrow">▶</div>
+            <div class="cnn-layer">
+              <div class="cnn-block amber" style="height:48px"></div>
+              <div class="cnn-block amber" style="height:48px;margin-top:2px"></div>
+              <div class="cnn-label">ReLU<br>Map</div>
+            </div>
+            <div class="cnn-arrow">▶</div>
+            <div class="cnn-layer">
+              <div class="cnn-block cyan" style="height:36px"></div>
+              <div class="cnn-label">MaxPool<br>2×2</div>
+            </div>
+            <div class="cnn-arrow">▶</div>
+            <div class="cnn-layer">
+              <div class="cnn-block" style="height:28px"></div>
+              <div class="cnn-block" style="height:28px;margin-top:2px"></div>
+              <div class="cnn-block" style="height:28px;margin-top:2px"></div>
+              <div class="cnn-label">Flatten<br>FC</div>
+            </div>
+            <div class="cnn-arrow">▶</div>
+            <div class="cnn-layer">
+              <div class="cnn-block amber" style="height:20px"></div>
+              <div class="cnn-block amber" style="height:20px;margin-top:2px"></div>
+              <div class="cnn-block amber" style="height:20px;margin-top:2px"></div>
+              <div class="cnn-block amber" style="height:20px;margin-top:2px"></div>
+              <div class="cnn-label">Softmax<br>Output</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code snippet -->
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>CONVOLUTION.PY</div>
+        <div class="t-card-body">
+          <pre style="font-size:0.72rem;line-height:1.9;color:var(--text);overflow-x:auto;padding-bottom:0.3rem"><span style="color:var(--text-dim)"># Dimensions of input and kernel</span>
+<span style="color:var(--cyan)">input_h</span>, <span style="color:var(--cyan)">input_w</span> = <span style="color:var(--amber)">len</span>(input_matrix), <span style="color:var(--amber)">len</span>(input_matrix[<span style="color:var(--green)">0</span>])
+<span style="color:var(--cyan)">kernel_h</span>, <span style="color:var(--cyan)">kernel_w</span> = <span style="color:var(--amber)">len</span>(kernel), <span style="color:var(--amber)">len</span>(kernel[<span style="color:var(--green)">0</span>])
+
+<span style="color:var(--text-dim)"># Output size</span>
+<span style="color:var(--cyan)">output_h</span> = input_h − kernel_h + <span style="color:var(--green)">1</span>
+<span style="color:var(--cyan)">output_w</span> = input_w − kernel_w + <span style="color:var(--green)">1</span>
+
+<span style="color:var(--text-dim)"># Convolution loop</span>
+<span style="color:var(--amber)">for</span> i <span style="color:var(--amber)">in</span> <span style="color:var(--cyan)">range</span>(output_h):
+    <span style="color:var(--amber)">for</span> j <span style="color:var(--amber)">in</span> <span style="color:var(--cyan)">range</span>(output_w):
+        conv_sum = <span style="color:var(--green)">0</span>
+        <span style="color:var(--amber)">for</span> ki <span style="color:var(--amber)">in</span> <span style="color:var(--cyan)">range</span>(kernel_h):
+            <span style="color:var(--amber)">for</span> kj <span style="color:var(--amber)">in</span> <span style="color:var(--cyan)">range</span>(kernel_w):
+                conv_sum += input_matrix[i+ki][j+kj] \
+                            * kernel[ki][kj]
+        output_matrix[i][j] = conv_sum
+
+<span style="color:var(--text-dim)"># ReLU + bias</span>
+bias = random.choice([<span style="color:var(--green)">−1</span>, <span style="color:var(--green)">1</span>])
+relu_map = [[<span style="color:var(--amber)">max</span>(<span style="color:var(--green)">0</span>, v+bias) <span style="color:var(--amber)">for</span> v <span style="color:var(--amber)">in</span> row]
+            <span style="color:var(--amber)">for</span> row <span style="color:var(--amber)">in</span> output_matrix]
+
+<span style="color:var(--text-dim)"># Max pooling 2×2, stride 2</span>
+pooled_map[i//2][j//2] = <span style="color:var(--amber)">max</span>(pooling_region)</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION: DATASET ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">ls ./dataset/</span>
+      <span class="sh-args">-la --contributors</span>
+    </div>
+
+    <div class="two-col-rev">
+      <!-- Dataset info -->
+      <div class="t-card reveal">
+        <div class="t-card-header"><div class="t-card-dot"></div>DATASET.DAT</div>
+        <div class="t-card-body">
+          <div class="dataset-row">
+            <div class="dataset-num">122+</div>
+            <div>
+              <div class="dataset-lbl">Human Contributors</div>
+              <div class="dataset-sub">Students, academics, and native script writers across Yogyakarta</div>
+            </div>
+          </div>
+          <div class="dataset-row">
+            <div class="dataset-num">20</div>
+            <div>
+              <div class="dataset-lbl">Aksara Jawa (Base)</div>
+              <div class="dataset-sub">ha na ca ra ka · da ta sa wa la · pa dha ja ya nya · ma ga ba tha nga</div>
+            </div>
+          </div>
+          <div class="dataset-row">
+            <div class="dataset-num">20</div>
+            <div>
+              <div class="dataset-lbl">Pasangan (Conjuncts)</div>
+              <div class="dataset-sub">Dead-consonant conjunct forms for all 20 base characters</div>
+            </div>
+          </div>
+          <div class="dataset-row">
+            <div class="dataset-num">10+</div>
+            <div>
+              <div class="dataset-lbl">Sandhangan (Diacritics)</div>
+              <div class="dataset-sub">Vowel markers, nasal markers (pangkon, wignyan, cecak, layar)</div>
+            </div>
+          </div>
+          <div class="dataset-row">
+            <div class="dataset-num">10</div>
+            <div>
+              <div class="dataset-lbl">Angka Jawa (Numerals)</div>
+              <div class="dataset-sub">Javanese digit system 0–9</div>
+            </div>
+          </div>
+          <div class="dataset-row">
+            <div class="dataset-num">5</div>
+            <div>
+              <div class="dataset-lbl">Aksara Rekan (Foreign)</div>
+              <div class="dataset-sub">kha · dza · fa/va · za · gha — loanword script forms</div>
+            </div>
+          </div>
+          <div style="margin-top:1rem;font-size:0.72rem;color:var(--text-dim);line-height:1.8">
+            All contributors signed a <span class="text-amber">Statement of Consent</span> for
+            collaboration and data utilization for research purposes only —
+            non-commercial, GDPR-aligned.
+          </div>
+        </div>
+      </div>
+
+      <!-- Script showcase -->
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>AKSARA SHOWCASE — HA NA CA RA KA</div>
+        <div class="t-card-body">
+          <div class="script-grid">
+            <div class="script-char"><span class="javanese-text">ꦲ</span><span class="roman">ha</span></div>
+            <div class="script-char"><span class="javanese-text">ꦤ</span><span class="roman">na</span></div>
+            <div class="script-char"><span class="javanese-text">ꦕ</span><span class="roman">ca</span></div>
+            <div class="script-char"><span class="javanese-text">ꦫ</span><span class="roman">ra</span></div>
+            <div class="script-char"><span class="javanese-text">ꦏ</span><span class="roman">ka</span></div>
+            <div class="script-char"><span class="javanese-text">ꦢ</span><span class="roman">da</span></div>
+            <div class="script-char"><span class="javanese-text">ꦠ</span><span class="roman">ta</span></div>
+            <div class="script-char"><span class="javanese-text">ꦱ</span><span class="roman">sa</span></div>
+            <div class="script-char"><span class="javanese-text">ꦮ</span><span class="roman">wa</span></div>
+            <div class="script-char"><span class="javanese-text">ꦭ</span><span class="roman">la</span></div>
+            <div class="script-char"><span class="javanese-text">ꦥ</span><span class="roman">pa</span></div>
+            <div class="script-char"><span class="javanese-text">ꦝ</span><span class="roman">dha</span></div>
+            <div class="script-char"><span class="javanese-text">ꦗ</span><span class="roman">ja</span></div>
+            <div class="script-char"><span class="javanese-text">ꦪ</span><span class="roman">ya</span></div>
+            <div class="script-char"><span class="javanese-text">ꦚ</span><span class="roman">nya</span></div>
+            <div class="script-char"><span class="javanese-text">ꦩ</span><span class="roman">ma</span></div>
+            <div class="script-char"><span class="javanese-text">ꦒ</span><span class="roman">ga</span></div>
+            <div class="script-char"><span class="javanese-text">ꦧ</span><span class="roman">ba</span></div>
+            <div class="script-char"><span class="javanese-text">ꦛ</span><span class="roman">tha</span></div>
+            <div class="script-char"><span class="javanese-text">ꦔ</span><span class="roman">nga</span></div>
+          </div>
+          <div style="margin-top:0.9rem;font-size:0.7rem;color:var(--text-dim);line-height:1.7">
+            <span class="text-green">◆</span>&nbsp;Hover over any character to inspect.
+            The full dataset sheet covers all base characters, pasangan, sandhangan, vowels, numerals, and foreign script forms.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION: ACCURACY RESULTS ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">python eval.py</span>
+      <span class="sh-args">--model indollnet_v1 --report</span>
+    </div>
+
+    <div class="two-col">
+      <!-- Results table -->
+      <div class="t-card reveal">
+        <div class="t-card-header"><div class="t-card-dot"></div>EVAL REPORT — ACCURACY BY CLASS</div>
+        <div class="t-card-body table-scroll">
+          <table class="acc-table">
+            <thead>
+              <tr>
+                <th>Script Type</th>
+                <th>Category</th>
+                <th>Accuracy</th>
+                <th style="width:120px">Bar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Javanese</td>
+                <td>Base Characters (20)</td>
+                <td><span class="acc-val high">98%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill" data-width="98"></div></div></td>
+              </tr>
+              <tr>
+                <td>Javanese</td>
+                <td>Pasangan (Conjuncts)</td>
+                <td><span class="acc-val high">97%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill" data-width="97"></div></div></td>
+              </tr>
+              <tr>
+                <td>Javanese</td>
+                <td>Sandhangan (Diacritics)</td>
+                <td><span class="acc-val high">96%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill" data-width="96"></div></div></td>
+              </tr>
+              <tr>
+                <td>Javanese</td>
+                <td>Vowel Disambiguation</td>
+                <td><span class="acc-val mid">95%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill amber" data-width="95"></div></div></td>
+              </tr>
+              <tr>
+                <td>Javanese</td>
+                <td>Numerals (0–9)</td>
+                <td><span class="acc-val high">98%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill" data-width="98"></div></div></td>
+              </tr>
+              <tr>
+                <td>Sundanese</td>
+                <td>Base Characters</td>
+                <td><span class="acc-val high">97%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill" data-width="97"></div></div></td>
+              </tr>
+              <tr>
+                <td>Lampung</td>
+                <td>Base Characters</td>
+                <td><span class="acc-val high">96%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill" data-width="96"></div></div></td>
+              </tr>
+              <tr>
+                <td>All</td>
+                <td>Word-level Recognition</td>
+                <td><span class="acc-val mid">95%</span></td>
+                <td><div class="acc-bar-wrap"><div class="acc-bar-fill amber" data-width="95"></div></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Demo result terminal -->
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>LIVE INFERENCE DEMO</div>
+        <div class="t-card-body">
+          <div class="result-demo">
+            <div class="result-output">
+              <div class="char-line">
+                <span class="label">INPUT&nbsp;&nbsp;›</span>
+                <span class="value">historical_doc_1913.jpg</span>
+              </div>
+              <div class="char-line" style="margin-top:0.5rem">
+                <span class="label">SCRIPT&nbsp;›</span>
+                <span class="value text-green">Javanese (Hanacaraka)</span>
+              </div>
+              <div style="margin:0.7rem 0 0.3rem;font-size:0.68rem;color:var(--text-dim);letter-spacing:1px;">DETECTED CHARACTERS:</div>
+              <div class="char-line">
+                <span style="color:var(--cyan);min-width:50px">ꦏꦸꦭ</span>
+                <span class="label">kula&nbsp;</span>
+                <div class="conf-bar"><div class="conf-bar-fill" style="width:98%"></div></div>
+                <span class="conf">98%</span>
+              </div>
+              <div class="char-line">
+                <span style="color:var(--cyan);min-width:50px">ꦤꦸꦮꦸꦤ꧀</span>
+                <span class="label">nuwun</span>
+                <div class="conf-bar"><div class="conf-bar-fill" style="width:97%"></div></div>
+                <span class="conf">97%</span>
+              </div>
+              <div class="char-line">
+                <span style="color:var(--cyan);min-width:50px">ꦥꦚꦸꦮꦸꦤ꧀</span>
+                <span class="label">panyuwun</span>
+                <div class="conf-bar"><div class="conf-bar-fill" style="width:96%"></div></div>
+                <span class="conf">96%</span>
+              </div>
+              <div style="margin-top:0.8rem;font-size:0.72rem">
+                <span class="label">FULL TEXT OUTPUT &gt;</span><br>
+                <span class="text-green" style="font-size:0.8rem;line-height:1.9">
+                  Kula nuwun, panyuwunipun ampilan arta<br>
+                  waragad pangusungipun rêca saking dhusun<br>
+                  Gupala dhatêng sêtsiyun Srowot f 50...
+                </span>
+              </div>
+              <div style="margin-top:0.6rem;font-size:0.68rem;color:var(--text-dim)">
+                Source: Historical document, June 24, 1913
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION: PROJECT CONTEXT ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./context/org.txt</span>
+    </div>
+
+    <div class="two-col">
+      <div class="t-card reveal">
+        <div class="t-card-header"><div class="t-card-dot"></div>PROJECT INFO</div>
+        <div class="t-card-body">
+          <div class="kv-row"><span class="kv-key">PROJECT:</span><span class="kv-val">IndoLLNet v1.0</span></div>
+          <div class="kv-row"><span class="kv-key">VERSION:</span><span class="kv-val text-green">1.0 — Stable</span></div>
+          <div class="kv-row"><span class="kv-key">ORG:</span><span class="kv-val">Data Sorcerers / Studio Shodwe</span></div>
+          <div class="kv-row"><span class="kv-key">PRESENTED:</span><span class="kv-val text-amber">PyCon US 2025, Pittsburgh PA</span></div>
+          <div class="kv-row"><span class="kv-key">DATASET:</span><span class="kv-val">122+ contributors, Oct 2024</span></div>
+          <div class="kv-row"><span class="kv-key">LICENSE:</span><span class="kv-val">Research / Non-Commercial</span></div>
+          <div class="kv-row"><span class="kv-key">FRAMEWORK:</span><span class="kv-val">Python · TensorFlow · OpenCV</span></div>
+          <div class="kv-row"><span class="kv-key">TECHNIQUE:</span><span class="kv-val">CNN · Patch Crop · Max Pooling · ReLU</span></div>
+          <div class="kv-row"><span class="kv-key">FUTURE:</span><span class="kv-val text-cyan">Web App · Mobile App · Social Media Integration</span></div>
+        </div>
+      </div>
+
+      <div class="t-card reveal" style="transition-delay:0.07s">
+        <div class="t-card-header"><div class="t-card-dot"></div>DATA SORCERERS — ORG.TXT</div>
+        <div class="t-card-body">
+          <p style="font-size:0.84rem;line-height:1.9;color:var(--text);margin-bottom:1rem">
+            <strong class="text-bright">Data Sorcerers</strong> is an organization that prepares
+            digital talent for the AI world through project-based and open source initiatives.
+            It bridges students with professionals, practitioners, and academics to build a
+            <span class="text-green">collaborative ecosystem</span>.
+          </p>
+          <div style="font-size:0.72rem;color:var(--text-dim);border-top:1px solid var(--border);padding-top:0.8rem">
+            <div style="margin-bottom:0.4rem"><span class="text-amber">◆</span>&nbsp;MOTTO: <em>"Sorcery in Data, Magic in AI"</em></div>
+            <div style="margin-bottom:0.4rem"><span class="text-green">◆</span>&nbsp;MAIN PROJECT: IndoLLNet v1.0 (CV Classification, Nusantara Scripts)</div>
+            <div><span class="text-cyan">◆</span>&nbsp;NEXT: Gamelan &amp; Angklung 2.0 — Neural Soundscapes digitization</div>
+          </div>
+          <div style="margin-top:1.2rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+            <a href="projects.html" class="btn btn-ghost" style="font-size:0.68rem;padding:0.35rem 0.8rem">← ALL PROJECTS</a>
+            <a href="contact.html" class="btn btn-amber" style="font-size:0.68rem;padding:0.35rem 0.8rem">COLLABORATE ▶</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SECTION: TEAM ─── -->
+    <div class="section-header reveal section-gap">
+      <span class="sh-prompt">marchel@sys:~$</span>
+      <span class="sh-cmd">cat ./team.json</span>
+    </div>
+
+    <div class="t-card reveal">
+      <div class="t-card-header"><div class="t-card-dot"></div>PROJECT TEAM — DATA SORCERERS COUNCIL</div>
+      <div class="t-card-body">
+        <div class="team-grid">
+          <div class="team-member">
+            <div class="team-avatar">M</div>
+            <div class="team-name">Marchel Shevchenko</div>
+            <div class="team-role">Lead · AI Architect</div>
+          </div>
+          <div class="team-member">
+            <div class="team-avatar" style="color:var(--amber)">H</div>
+            <div class="team-name">Hanuna Zoelkha</div>
+            <div class="team-role">Dataset · Research</div>
+          </div>
+          <div class="team-member">
+            <div class="team-avatar" style="color:var(--cyan)">R</div>
+            <div class="team-name">Auban Nur Rizqi</div>
+            <div class="team-role">ML Engineer</div>
+          </div>
+          <div class="team-member">
+            <div class="team-avatar" style="color:var(--green)">Z</div>
+            <div class="team-name">Zamroch Luluk</div>
+            <div class="team-role">Data Collection</div>
+          </div>
+          <div class="team-member">
+            <div class="team-avatar" style="color:var(--amber)">+</div>
+            <div class="team-name">122+ Contributors</div>
+            <div class="team-role">Handwriting Dataset</div>
+          </div>
+          <div class="team-member">
+            <div class="team-avatar" style="color:var(--text-dim)">◎</div>
+            <div class="team-name">Studio Shodwe</div>
+            <div class="team-role">Design · Presentation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <!-- ══ FOOTER ══ -->
+  <footer class="footer">
+    <div style="max-width:1100px;margin:0 auto">
+      <span class="text-dim">marchel@sys:~$ </span>
+      <span class="text-green">./indollnet</span>
+      <span class="text-dim"> — Data Sorcerers © 2024 · </span>
+      <a href="projects.html">Projects</a>
+      <span class="text-dim"> · </span>
+      <a href="contact.html">Contact</a>
+      <span class="text-dim"> · PyCon US 2025 Pittsburgh PA</span>
+    </div>
+  </footer>
+
+  <script src="/pages/indollnet.js"></script>
+</body>
+</html>

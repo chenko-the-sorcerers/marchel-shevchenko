@@ -786,6 +786,7 @@
         <a href="rpg.html">⚔️ Nusantara RPG</a>
         <a href="game.html">🧠 Neural Builder</a>
         <a href="404.html">🗺️ 404 Adventure</a>
+        <a href="chess.html">♟️ Chess vs AI</a>
       `;
       document.body.appendChild(gameMenu);
       gameBtn.addEventListener('click', () => {
