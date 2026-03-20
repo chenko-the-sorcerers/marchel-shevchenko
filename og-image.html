@@ -1,156 +1,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>OG Image Generator</title>
+  <meta charset="UTF-8"/>
+  <title>OG Image Generator — Marchel Shevchenko</title>
   <style>
-    body { background:#111; display:flex; flex-direction:column; align-items:center; padding:2rem; font-family:monospace; color:#00ff41; }
-    canvas { border:1px solid #0d3318; margin:1rem 0; max-width:100%; }
-    button { background:#00ff41; color:#020905; border:none; padding:0.6rem 1.4rem; font-family:monospace; font-size:0.9rem; cursor:pointer; margin:0.5rem; }
-    p { font-size:0.8rem; color:#3d8048; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #060e08;
+      display: flex; flex-direction: column;
+      align-items: center; padding: 2rem;
+      font-family: 'Share Tech Mono', monospace; color: #00ff41;
+      min-height: 100vh;
+    }
+    h2 { font-size: 0.75rem; letter-spacing: 0.15em; color: #005a1a; margin-bottom: 1rem; }
+    canvas { max-width: 100%; border: 1px solid #0d3318; box-shadow: 0 0 40px rgba(0,255,65,0.12); }
+    .btns { display: flex; gap: 0.8rem; margin: 1.2rem 0; flex-wrap: wrap; justify-content: center; }
+    button {
+      background: transparent; color: #00ff41;
+      border: 1px solid #00ff41; padding: 0.5rem 1.4rem;
+      font-family: monospace; font-size: 0.82rem;
+      cursor: pointer; letter-spacing: 0.08em;
+      transition: all 0.2s;
+    }
+    button:hover { background: #00ff41; color: #020905; }
+    .hint { font-size: 0.7rem; color: #1a4a22; }
   </style>
-  <script src="components/terminal.js" defer></script>
 </head>
 <body>
-  <h2 style="font-size:0.9rem;letter-spacing:0.1em;">OG IMAGE GENERATOR</h2>
+  <h2>⚙ OG IMAGE GENERATOR — 1200×630</h2>
   <canvas id="c" width="1200" height="630"></canvas>
-  <div>
-    <button onclick="generate()">REGENERATE</button>
-    <button onclick="download()">DOWNLOAD PNG</button>
+  <div class="btns">
+    <button onclick="generate()">↺ REGENERATE</button>
+    <button onclick="download()">↓ DOWNLOAD og-image.png</button>
   </div>
-  <p>Save as <strong>og-image.png</strong> in root folder</p>
+  <p class="hint">Save as <strong>og-image.png</strong> in root folder → redeploy to Vercel</p>
 
-  <script>
-  const canvas = document.getElementById('c');
-  const ctx    = canvas.getContext('2d');
-  const W = 1200, H = 630;
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const W = 1200, H = 630;
 
-  function generate() {
-    // Background
-    ctx.fillStyle = '#020905';
-    ctx.fillRect(0, 0, W, H);
+function generate() {
+  ctx.clearRect(0,0,W,H);
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(0,255,65,0.04)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < W; x += 60) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-    for (let y = 0; y < H; y += 60) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+  /* ── BACKGROUND ── */
+  ctx.fillStyle = '#020905';
+  ctx.fillRect(0,0,W,H);
 
-    // Scanlines
-    for (let y = 0; y < H; y += 4) {
-      ctx.fillStyle = 'rgba(0,0,0,0.12)';
-      ctx.fillRect(0, y, W, 2);
-    }
+  /* ── GRID ── */
+  ctx.strokeStyle = 'rgba(0,255,65,0.035)';
+  ctx.lineWidth = 1;
+  for (let x=0;x<W;x+=50) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y=0;y<H;y+=50) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
 
-    // Glow orb top-right
-    const grd = ctx.createRadialGradient(950, 120, 0, 950, 120, 300);
-    grd.addColorStop(0, 'rgba(0,255,65,0.12)');
-    grd.addColorStop(1, 'rgba(0,255,65,0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, W, H);
+  /* ── SCANLINES ── */
+  for (let y=0;y<H;y+=3) { ctx.fillStyle='rgba(0,0,0,0.08)'; ctx.fillRect(0,y,W,1); }
 
-    // Border
-    ctx.strokeStyle = '#155a28';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(1, 1, W-2, H-2);
+  /* ── RIGHT SIDE GLOW ── */
+  const rg = ctx.createRadialGradient(1000,200,0,1000,200,450);
+  rg.addColorStop(0,'rgba(0,255,65,0.09)');
+  rg.addColorStop(0.5,'rgba(0,255,65,0.04)');
+  rg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
 
-    // Inner border
-    ctx.strokeStyle = 'rgba(0,255,65,0.15)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(20, 20, W-40, H-40);
+  /* ── BOTTOM ACCENT GLOW ── */
+  const bg2 = ctx.createLinearGradient(0,H-120,0,H);
+  bg2.addColorStop(0,'rgba(0,0,0,0)');
+  bg2.addColorStop(1,'rgba(0,255,65,0.04)');
+  ctx.fillStyle=bg2; ctx.fillRect(0,0,W,H);
 
-    // Top bar
-    ctx.fillStyle = 'rgba(0,255,65,0.05)';
-    ctx.fillRect(20, 20, W-40, 48);
+  /* ── OUTER BORDER ── */
+  ctx.strokeStyle = '#0d3318';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1,1,W-2,H-2);
 
-    // Window dots
-    [[40,'#ff5f57'],[62,'#febc2e'],[84,'#28c840']].forEach(([x,c]) => {
-      ctx.beginPath(); ctx.arc(x, 44, 7, 0, Math.PI*2);
-      ctx.fillStyle = c; ctx.fill();
-    });
+  /* ── INNER FRAME ── */
+  ctx.strokeStyle = 'rgba(0,255,65,0.12)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(24,24,W-48,H-48);
 
-    // Title bar text
-    ctx.fillStyle = 'rgba(0,255,65,0.4)';
-    ctx.font = '14px monospace';
-    ctx.fillText('marchel@sys:~/portfolio $ ./init_portfolio.sh', 110, 49);
+  /* ── TOP BAR (terminal chrome) ── */
+  ctx.fillStyle = 'rgba(0,255,65,0.04)';
+  ctx.fillRect(24,24,W-48,44);
+  ctx.strokeStyle = 'rgba(0,255,65,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(24,68); ctx.lineTo(W-24,68); ctx.stroke();
 
-    // SYS:// badge
-    ctx.font = 'bold 13px monospace';
-    ctx.fillStyle = '#00ff41';
-    ctx.fillText('SYS://MARCHEL', 56, 110);
+  // Window dots
+  [[46,'#ff5f57'],[68,'#febc2e'],[90,'#28c840']].forEach(([x,c]) => {
+    ctx.beginPath(); ctx.arc(x,46,6,0,Math.PI*2);
+    ctx.fillStyle=c; ctx.fill();
+  });
+  ctx.fillStyle='rgba(0,255,65,0.3)';
+  ctx.font='13px monospace';
+  ctx.fillText('marchel@axion:~/portfolio$ ./init --mode=AI_ARCHITECT', 112, 50);
 
-    // Main name
-    ctx.font = 'bold 80px monospace';
-    const grad = ctx.createLinearGradient(56, 130, 700, 220);
-    grad.addColorStop(0, '#00ff41');
-    grad.addColorStop(1, '#00a82b');
-    ctx.fillStyle = grad;
-    ctx.fillText('MARCHEL', 56, 210);
-    ctx.fillText('SHEVCHENKO', 56, 300);
+  /* ── SYS BADGE ── */
+  ctx.font='bold 11px monospace';
+  ctx.fillStyle='rgba(0,255,65,0.35)';
+  ctx.letterSpacing='0.15em';
+  ctx.fillText('SYS://MARCHEL · AXION/OS', 48, 100);
 
-    // Title
-    ctx.font = '22px monospace';
-    ctx.fillStyle = '#ffb300';
-    ctx.fillText('AI ARCHITECT & BUILDER', 56, 350);
+  /* ── MAIN NAME — big glowing ── */
+  // Glow shadow pass
+  ctx.shadowColor='#00ff41';
+  ctx.shadowBlur=28;
+  ctx.font='bold 92px monospace';
+  const nameGrad = ctx.createLinearGradient(48,130,820,300);
+  nameGrad.addColorStop(0,'#00ff41');
+  nameGrad.addColorStop(0.6,'#00e038');
+  nameGrad.addColorStop(1,'#008820');
+  ctx.fillStyle=nameGrad;
+  ctx.fillText('MARCHEL', 48, 215);
+  ctx.fillText('SHEVCHENKO', 48, 315);
+  ctx.shadowBlur=0;
 
-    // Tags
-    const tags = ['MULTIMODAL AI', 'INDONESIAN NLP', 'FOUNDATION MODELS', 'MIT Pre-PhD', 'NVIDIA INCEPTION'];
-    let tx = 56;
-    tags.forEach(tag => {
-      const tw = ctx.measureText(tag).width + 20;
-      ctx.fillStyle = 'rgba(0,255,65,0.08)';
-      ctx.strokeStyle = '#155a28';
-      ctx.lineWidth = 1;
-      ctx.fillRect(tx, 375, tw, 28);
-      ctx.strokeRect(tx, 375, tw, 28);
-      ctx.font = '12px monospace';
-      ctx.fillStyle = '#00ff41';
-      ctx.fillText(tag, tx+10, 393);
-      tx += tw + 10;
-    });
+  /* ── SUBTITLE ── */
+  ctx.font='bold 24px monospace';
+  ctx.fillStyle='#ffb300';
+  ctx.shadowColor='#ffb300'; ctx.shadowBlur=10;
+  ctx.fillText('AI ARCHITECT  ·  BUILDER  ·  MIT Pre-PhD', 48, 360);
+  ctx.shadowBlur=0;
 
-    // Stats
-    const stats = [['20+','PROJECTS'],['40+','TALKS'],['600K+','USERS'],['$362K+','NVIDIA GRANTS']];
-    stats.forEach(([val,lbl], i) => {
-      const sx = 56 + i * 270;
-      ctx.font = 'bold 36px monospace';
-      ctx.fillStyle = '#ffb300';
-      ctx.fillText(val, sx, 490);
-      ctx.font = '12px monospace';
-      ctx.fillStyle = 'rgba(0,255,65,0.5)';
-      ctx.fillText(lbl, sx, 510);
-    });
+  /* ── DIVIDER ── */
+  const dg = ctx.createLinearGradient(48,380,700,380);
+  dg.addColorStop(0,'rgba(0,255,65,0.6)');
+  dg.addColorStop(1,'rgba(0,255,65,0)');
+  ctx.strokeStyle=dg; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(48,380); ctx.lineTo(700,380); ctx.stroke();
 
-    // Bottom bar
-    ctx.fillStyle = 'rgba(0,255,65,0.04)';
-    ctx.fillRect(20, H-68, W-40, 48);
-    ctx.font = '13px monospace';
-    ctx.fillStyle = 'rgba(0,255,65,0.35)';
-    ctx.fillText('marchel-shevchenko.vercel.app', 56, H-38);
-    ctx.fillStyle = 'rgba(0,255,65,0.2)';
-    ctx.fillText('[AI FOR CULTURE · LANGUAGE · THE FUTURE OF INDONESIA]', 400, H-38);
+  /* ── TAGS ── */
+  const tags = ['MULTIMODAL AI','INDONESIAN NLP','FOUNDATION MODELS','NVIDIA INCEPTION','MIT'];
+  let tx=48;
+  ctx.font='11px monospace';
+  tags.forEach(tag => {
+    const tw = ctx.measureText(tag).width + 22;
+    ctx.fillStyle='rgba(0,255,65,0.07)';
+    ctx.strokeStyle='rgba(0,255,65,0.2)';
+    ctx.lineWidth=1;
+    ctx.fillRect(tx,392,tw,24);
+    ctx.strokeRect(tx,392,tw,24);
+    ctx.fillStyle='rgba(0,255,65,0.7)';
+    ctx.fillText(tag,tx+11,408);
+    tx+=tw+8;
+  });
 
-    // Particle dots (decorative)
-    for (let i = 0; i < 40; i++) {
-      const x = 820 + Math.random() * 340;
-      const y = 80 + Math.random() * 480;
-      const r = 1 + Math.random() * 3;
-      const a = 0.1 + Math.random() * 0.4;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(0,255,65,${a})`;
-      ctx.fill();
+  /* ── STATS ── */
+  const stats=[['20+','PROJECTS'],['40+','TALKS'],['600K+','USERS'],['$362K+','GRANTS']];
+  stats.forEach(([val,lbl],i) => {
+    const sx=48+i*190;
+    ctx.font='bold 34px monospace';
+    ctx.fillStyle='#ffb300';
+    ctx.shadowColor='#ffb300'; ctx.shadowBlur=8;
+    ctx.fillText(val,sx,490);
+    ctx.shadowBlur=0;
+    ctx.font='10px monospace';
+    ctx.fillStyle='rgba(0,255,65,0.4)';
+    ctx.fillText(lbl,sx,508);
+  });
+
+  /* ── BOTTOM BAR ── */
+  ctx.fillStyle='rgba(0,255,65,0.04)';
+  ctx.fillRect(24,H-60,W-48,36);
+  ctx.strokeStyle='rgba(0,255,65,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(24,H-60); ctx.lineTo(W-24,H-60); ctx.stroke();
+
+  ctx.font='12px monospace';
+  ctx.fillStyle='rgba(0,255,65,0.45)';
+  ctx.fillText('🌐  marchel-shevchenko.vercel.app', 48, H-36);
+  ctx.fillStyle='rgba(0,255,65,0.2)';
+  ctx.textAlign='right';
+  ctx.fillText('AI FOR CULTURE · LANGUAGE · THE FUTURE OF NUSANTARA', W-48, H-36);
+  ctx.textAlign='left';
+
+  /* ── RIGHT SIDE: Neural network visual ── */
+  drawNeuralNet();
+
+  /* ── CORNER MARKS ── */
+  const corners=[[24,24],[W-24,24],[24,H-24],[W-24,H-24]];
+  const dirs=[[1,1],[-1,1],[1,-1],[-1,-1]];
+  ctx.strokeStyle='rgba(0,255,65,0.35)'; ctx.lineWidth=1.5;
+  corners.forEach(([x,y],[dx,dy]) => {
+    ctx.beginPath(); ctx.moveTo(x,y+dy*14); ctx.lineTo(x,y); ctx.lineTo(x+dx*14,y); ctx.stroke();
+  }, dirs.forEach.bind(dirs));
+  // redo properly
+  [[24,24,1,1],[W-24,24,-1,1],[24,H-24,1,-1],[W-24,H-24,-1,-1]].forEach(([x,y,dx,dy])=>{
+    ctx.beginPath(); ctx.moveTo(x,y+dy*14); ctx.lineTo(x,y); ctx.lineTo(x+dx*14,y); ctx.stroke();
+  });
+}
+
+function drawNeuralNet() {
+  // Decorative neural network on the right half
+  const nodes = [];
+  const cols  = 4, rows = 5;
+  const ox=780, oy=110, gapX=100, gapY=86;
+
+  for (let c=0;c<cols;c++) {
+    for (let r=0;r<rows-(c%2);r++) {
+      const x=ox+c*gapX;
+      const y=oy+r*gapY+(c%2)*43;
+      nodes.push({x,y,c,r});
     }
   }
 
-  function download() {
-    const a = document.createElement('a');
-    a.download = 'og-image.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  }
+  // Connections
+  ctx.lineWidth=0.7;
+  nodes.forEach(a => {
+    nodes.forEach(b => {
+      if (b.c===a.c+1) {
+        const alpha=0.06+Math.random()*0.1;
+        ctx.strokeStyle=`rgba(0,255,65,${alpha})`;
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    });
+  });
 
-  generate();
-  </script>
+  // Nodes
+  nodes.forEach(n => {
+    const r=4+Math.random()*4;
+    const a=0.25+Math.random()*0.55;
+    const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,r*4);
+    g.addColorStop(0,`rgba(0,255,65,${a*0.8})`);
+    g.addColorStop(1,'rgba(0,255,65,0)');
+    ctx.beginPath(); ctx.arc(n.x,n.y,r*4,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(0,255,65,${a})`; ctx.fill();
+  });
+
+  // Labels on nodes
+  ctx.font='8px monospace';
+  ctx.fillStyle='rgba(0,255,65,0.25)';
+  const labels=['LLM','NLP','CV','RL','ASR','TTS','OCR','RAG','BERT','GPT','RLHF','LoRA','CNN'];
+  nodes.forEach((n,i)=>{
+    if (i<labels.length) ctx.fillText(labels[i],n.x-10,n.y-10);
+  });
+
+  // Vertical label
+  ctx.save();
+  ctx.translate(W-38,H/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.font='10px monospace';
+  ctx.fillStyle='rgba(0,255,65,0.18)';
+  ctx.textAlign='center';
+  ctx.fillText('NEURAL ARCHITECTURE · DATA SORCERERS', 0, 0);
+  ctx.restore();
+}
+
+function download() {
+  const a=document.createElement('a');
+  a.download='og-image.png';
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+}
+
+generate();
+</script>
 </body>
 </html>

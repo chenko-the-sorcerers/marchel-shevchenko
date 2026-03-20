@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sabdarana Tokenomics — Marchel Shevchenko</title>
+<meta name="description" content="Interactive token economics dashboard for Sabdarana — Bitcoin-pattern halving simulation."/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='56%' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%23ffb300'>◈</text></svg>"/>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ═══════════ GLOBALS (axion portfolio mirror) ═══════════ */
+:root{
+  --bg:#020905;--panel:rgba(4,14,8,0.92);
+  --green:#00ff41;--green-dark:#005c18;
+  --amber:#ffb300;--amber-dim:rgba(255,179,0,0.35);
+  --cyan:#00e5ff;--red:#ff4444;
+  --text:#b0c8b4;--text-bright:#e8f5e9;--text-dim:#4a6b50;
+  --border:rgba(0,255,65,0.12);--border-hi:rgba(0,255,65,0.25);
+  --glow-g:0 0 8px rgba(0,255,65,.6),0 0 20px rgba(0,255,65,.2);
+  --glow-a:0 0 8px rgba(255,179,0,.6),0 0 20px rgba(255,179,0,.2);
+  --glow-c:0 0 8px rgba(0,229,255,.5),0 0 20px rgba(0,229,255,.15);
+  --font-mono:'Courier New',monospace;--font-vt:'VT323',monospace;
+  --nav-h:56px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;cursor:none}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);pointer-events:none;z-index:9998}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border-hi)}::-webkit-scrollbar-thumb:hover{background:var(--green)}
+#cursor-dot{position:fixed;width:6px;height:6px;background:var(--green);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);box-shadow:0 0 6px var(--green)}
+#cursor-ring{position:fixed;width:28px;height:28px;border:1px solid rgba(0,255,65,.5);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:width .15s,height .15s,border-color .15s}
+body.ch #cursor-ring{width:38px;height:38px;border-color:var(--green)}
+#bg-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* navbar */
+#navbar{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(2,9,5,.95);border-bottom:1px solid var(--border-hi);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;z-index:1000;backdrop-filter:blur(8px)}
+.nav-logo{font-family:var(--font-vt);font-size:1.4rem;color:var(--green);text-shadow:var(--glow-g);text-decoration:none;letter-spacing:2px}
+.nav-logo span{color:var(--amber)}
+.nav-links{display:flex;align-items:center;gap:.2rem;list-style:none}
+.nav-links a{font-family:var(--font-mono);font-size:.75rem;color:var(--text-dim);text-decoration:none;padding:.3rem .7rem;border:1px solid transparent;transition:all .2s;letter-spacing:1px;text-transform:uppercase;cursor:none}
+.nav-links a:hover,.nav-links a.active{color:var(--green);border-color:var(--border-hi);text-shadow:var(--glow-g)}
+.nav-status{display:flex;align-items:center;gap:.5rem;font-size:.72rem;color:var(--text-dim)}
+.status-dot{width:6px;height:6px;background:var(--amber);border-radius:50%;animation:stblink 2s ease-in-out infinite;box-shadow:0 0 6px var(--amber)}
+@keyframes stblink{0%,100%{opacity:1}50%{opacity:.3}}
+.nav-ham{display:none;flex-direction:column;gap:5px;cursor:none;padding:4px}
+.nav-ham span{display:block;width:22px;height:2px;background:var(--green)}
+
+/* layout */
+.page-wrap{max-width:1200px;margin:0 auto;padding:calc(var(--nav-h) + 2rem) 2rem 4rem;position:relative;z-index:1}
+
+/* hero */
+.hero-kicker{font-size:.72rem;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:.5rem}
+.hero-kicker span{color:var(--amber)}
+.hero-title{font-family:var(--font-vt);font-size:clamp(3rem,8vw,5.5rem);color:var(--amber);text-shadow:var(--glow-a);line-height:.95;margin-bottom:.3rem}
+.hero-sub{font-size:.88rem;color:var(--text);max-width:600px;line-height:1.85;margin-bottom:1.2rem}
+.hero-meta{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.8rem}
+.tag{font-family:var(--font-mono);font-size:.68rem;padding:.15rem .5rem;border:1px solid var(--border-hi);color:var(--text-dim);text-transform:uppercase}
+.tag-g{border-color:rgba(0,255,65,.4);color:var(--green)}
+.tag-a{border-color:rgba(255,179,0,.4);color:var(--amber)}
+.tag-c{border-color:rgba(0,229,255,.4);color:var(--cyan)}
+.evb{display:inline-flex;align-items:center;gap:.5rem;font-size:.7rem;color:var(--amber);border:1px solid var(--amber-dim);padding:.2rem .7rem;text-transform:uppercase}
+.evb .d{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:stblink 1.5s ease-in-out infinite}
+
+/* section header */
+.sh{display:flex;align-items:center;gap:.6rem;font-size:.82rem;margin:2.5rem 0 1.2rem;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+.shp{color:var(--green)}.shc{color:var(--text-bright)}.sha{color:var(--text-dim)}
+
+/* t-card */
+.tc{background:var(--panel);border:1px solid var(--border-hi);transition:border-color .2s}
+.tc:hover{border-color:var(--green)}
+.tch{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-bottom:1px solid var(--border);font-size:.72rem;color:var(--text-dim);background:rgba(0,255,65,.02);letter-spacing:1px;text-transform:uppercase}
+.tcd{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);flex-shrink:0}
+.tcb{padding:1rem 1.2rem}
+
+/* stats strip */
+.stats-strip{background:var(--panel);border:1px solid var(--border-hi);padding:0;margin-bottom:1.5rem}
+.stats-inner{display:grid;grid-template-columns:repeat(5,1fr)}
+.si{padding:.8rem 1rem;text-align:center;border-right:1px solid var(--border)}
+.si:last-child{border-right:none}
+.sn{font-family:var(--font-vt);font-size:clamp(1.4rem,2.5vw,2.2rem);line-height:1}
+.sn.g{color:var(--green);text-shadow:var(--glow-g)}
+.sn.a{color:var(--amber);text-shadow:var(--glow-a)}
+.sn.c{color:var(--cyan);text-shadow:var(--glow-c)}
+.sl{font-size:.62rem;color:var(--text-dim);margin-top:.15rem;letter-spacing:1px;text-transform:uppercase}
+
+/* controls panel */
+.controls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.ctrl-group label{display:block;font-size:.68rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.3rem}
+.ctrl-group input[type=range]{width:100%;appearance:none;height:4px;background:var(--border-hi);outline:none;cursor:none}
+.ctrl-group input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);cursor:none}
+.ctrl-group input[type=number]{width:100%;background:rgba(0,255,65,.05);border:1px solid var(--border-hi);color:var(--text-bright);font-family:var(--font-mono);font-size:.8rem;padding:.4rem .6rem;outline:none;cursor:none}
+.ctrl-group input[type=number]:focus{border-color:var(--green)}
+.ctrl-val{font-family:var(--font-vt);font-size:1.1rem;color:var(--amber);margin-top:.2rem}
+
+.run-btn{font-family:var(--font-mono);font-size:.8rem;padding:.6rem 1.5rem;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--green);background:rgba(0,255,65,.08);color:var(--green);cursor:none;transition:all .2s;text-shadow:var(--glow-g)}
+.run-btn:hover{background:rgba(0,255,65,.18);box-shadow:var(--glow-g)}
+.run-btn:active{transform:scale(.97)}
+.run-btn.running{border-color:var(--amber);color:var(--amber);background:rgba(255,179,0,.08);text-shadow:var(--glow-a);animation:pulse .6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* chart areas */
+.charts-main{display:grid;grid-template-columns:1fr;gap:1.2rem;margin-bottom:1.2rem}
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;margin-bottom:1.2rem}
+.charts-row-2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem}
+.chart-card{background:var(--panel);border:1px solid var(--border-hi);transition:border-color .2s}
+.chart-card:hover{border-color:rgba(0,255,65,.4)}
+.chart-hdr{display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-bottom:1px solid var(--border);font-size:.72rem;color:var(--text-dim);background:rgba(0,255,65,.02);letter-spacing:1px;text-transform:uppercase}
+.chart-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cd-g{background:var(--green);box-shadow:0 0 6px var(--green)}
+.cd-a{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.cd-c{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.chart-body{padding:.8rem;height:260px;position:relative}
+.chart-body.tall{height:340px}
+.chart-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-vt);font-size:1.2rem;color:var(--text-dim)}
+
+/* halving events table */
+.hvt{width:100%;border-collapse:collapse;font-size:.78rem}
+.hvt th{text-align:left;color:var(--text-dim);font-size:.68rem;letter-spacing:1px;text-transform:uppercase;padding:.4rem .8rem;border-bottom:1px solid var(--border-hi)}
+.hvt td{padding:.45rem .8rem;border-bottom:1px solid var(--border);color:var(--text)}
+.hvt tr:hover td{background:rgba(0,255,65,.03)}
+.hvt .val-g{font-family:var(--font-vt);color:var(--green)}
+.hvt .val-a{font-family:var(--font-vt);color:var(--amber)}
+.hvt .val-c{font-family:var(--font-vt);color:var(--cyan)}
+
+/* annual perf table */
+.apt{width:100%;border-collapse:collapse;font-size:.76rem}
+.apt th{text-align:left;color:var(--text-dim);font-size:.67rem;letter-spacing:1px;text-transform:uppercase;padding:.35rem .7rem;border-bottom:1px solid var(--border-hi)}
+.apt td{padding:.4rem .7rem;border-bottom:1px solid var(--border);color:var(--text)}
+.apt tr:hover td{background:rgba(0,255,65,.03)}
+.pos{color:var(--green)}.neg{color:var(--red)}.neu{color:var(--text-dim)}
+
+/* progress bar inline */
+.pbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:.2rem}
+.pbar-fill{height:100%;border-radius:2px;transition:width .8s ease}
+.pbar-fill.g{background:var(--green);box-shadow:0 0 4px rgba(0,255,65,.5)}
+.pbar-fill.a{background:var(--amber);box-shadow:0 0 4px rgba(255,179,0,.5)}
+
+/* footer */
+.footer{border-top:1px solid var(--border-hi);padding:1.5rem 2rem;text-align:center;font-size:.72rem;color:var(--text-dim);position:relative;z-index:1}
+.footer a{color:var(--green);text-decoration:none}
+
+/* reveal */
+.rev{opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s}
+.rev.vis{opacity:1;transform:none}
+
+@media(max-width:900px){.charts-row{grid-template-columns:1fr 1fr}.charts-row-2{grid-template-columns:1fr}}
+@media(max-width:700px){.stats-inner{grid-template-columns:repeat(3,1fr)}.si:nth-child(4){border-left:none}.charts-row{grid-template-columns:1fr}.controls-grid{grid-template-columns:1fr 1fr}.nav-links{display:none;flex-direction:column;position:absolute;top:var(--nav-h);left:0;right:0;background:rgba(2,9,5,.98);border-bottom:1px solid var(--border-hi);padding:1rem}.nav-links.open{display:flex}.nav-ham{display:flex}.nav-status{display:none}}
+@media(max-width:480px){.stats-inner{grid-template-columns:repeat(2,1fr)}.controls-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <a class="nav-logo" href="index.html">MARCHEL<span>.</span>SYS</a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="projects.html" class="active">Projects</a></li>
+    <li><a href="experience.html">Experience</a></li>
+    <li><a href="skills.html">Skills</a></li>
+    <li><a href="contact.html">Contact</a></li>
+  </ul>
+  <div class="nav-status"><div class="status-dot"></div><span>SABDARANA&nbsp;TOKENOMICS</span></div>
+  <div class="nav-ham" id="nav-ham"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- PAGE -->
+<div class="page-wrap">
+
+  <!-- HERO -->
+  <div class="rev">
+    <div class="hero-kicker"><span>◆</span>&nbsp;Data Sorcerers · Tokenomics · Bitcoin-Pattern Simulation</div>
+    <h1 class="hero-title">SABDARANA</h1>
+    <p class="hero-sub">
+      Interactive tokenomics dashboard — simulasi ekonomi token berbasis pola historis Bitcoin.
+      Halving setiap 4 tahun, supply cap 17 juta token, harga mengikuti siklus Bitcoin.
+    </p>
+    <div class="hero-meta">
+      <span class="evb"><span class="d"></span>LIVE SIMULATION</span>
+      <span class="tag tag-a">Bitcoin-Pattern HODling</span>
+      <span class="tag tag-g">Halving Mechanism</span>
+      <span class="tag tag-c">17,081,945 Supply Cap</span>
+      <span class="tag">Rp1,000 Starting Price</span>
+    </div>
+  </div>
+
+  <!-- STATS STRIP -->
+  <div class="stats-strip rev" id="stats-strip">
+    <div class="stats-inner">
+      <div class="si"><div class="sn a" id="stat-price">Rp1,000</div><div class="sl">Harga Akhir</div></div>
+      <div class="si"><div class="sn g" id="stat-roi">0x</div><div class="sl">Total ROI</div></div>
+      <div class="si"><div class="sn c" id="stat-supply">0%</div><div class="sl">Supply Didistribusi</div></div>
+      <div class="si"><div class="sn a" id="stat-mcap">Rp0</div><div class="sl">Market Cap Puncak</div></div>
+      <div class="si"><div class="sn g" id="stat-days">0 hari</div><div class="sl">Durasi Simulasi</div></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="sh rev">
+    <span class="shp">marchel@sys:~$</span>
+    <span class="shc">sabdarana --simulate</span>
+    <span class="sha">--params custom --run</span>
+  </div>
+  <div class="tc rev" style="margin-bottom:1.2rem">
+    <div class="tch"><div class="tcd" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>PARAMETER SIMULASI</div>
+    <div class="tcb">
+      <div class="controls-grid">
+        <div class="ctrl-group">
+          <label>Total Pasokan Token</label>
+          <input type="number" id="p-supply" value="17081945" min="1000000" max="100000000" step="100000"/>
+        </div>
+        <div class="ctrl-group">
+          <label>Hadiah Harian Awal</label>
+          <input type="number" id="p-reward" value="50" min="1" max="1000" step="1"/>
+        </div>
+        <div class="ctrl-group">
+          <label>Interval Halving (hari)</label>
+          <input type="number" id="p-halving" value="1460" min="365" max="2920" step="365"/>
+          <div class="ctrl-val" id="v-halving">4 tahun</div>
+        </div>
+        <div class="ctrl-group">
+          <label>Tahun Simulasi</label>
+          <input type="range" id="p-years" min="5" max="30" value="25" step="1"/>
+          <div class="ctrl-val" id="v-years">25 tahun</div>
+        </div>
+        <div class="ctrl-group">
+          <label>Harga Awal (Rp)</label>
+          <input type="number" id="p-price" value="1000" min="1" max="1000000" step="100"/>
+        </div>
+        <div class="ctrl-group" style="display:flex;align-items:flex-end;gap:.5rem">
+          <button class="run-btn" id="run-btn" onclick="runSimulation()">▶ JALANKAN SIMULASI</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN PRICE CHART -->
+  <div class="sh rev">
+    <span class="shp">marchel@sys:~$</span>
+    <span class="shc">chart --price-evolution</span>
+    <span class="sha">--scale log --halving-markers</span>
+  </div>
+  <div class="chart-card rev">
+    <div class="chart-hdr"><div class="chart-dot cd-a"></div>EVOLUSI HARGA TOKEN — SKALA LOGARITMIK</div>
+    <div class="chart-body tall" id="price-loading">
+      <div class="chart-loading">marchel@sys:~$ loading...</div>
+      <canvas id="chart-price" style="display:none"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW: Supply, Emission, Volatility -->
+  <div class="charts-row rev" style="transition-delay:.05s">
+    <div class="chart-card">
+      <div class="chart-hdr"><div class="chart-dot cd-c"></div>DISTRIBUSI PASOKAN (%)</div>
+      <div class="chart-body"><canvas id="chart-supply"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr"><div class="chart-dot cd-a"></div>EMISI HARIAN (LOG)</div>
+      <div class="chart-body"><canvas id="chart-emission"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr"><div class="chart-dot cd-g"></div>ROI DARI HARGA AWAL (x)</div>
+      <div class="chart-body"><canvas id="chart-roi"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW: Market Cap, Bitcoin Pattern -->
+  <div class="charts-row-2 rev" style="transition-delay:.1s">
+    <div class="chart-card">
+      <div class="chart-hdr"><div class="chart-dot cd-g"></div>KAPITALISASI PASAR (LOG)</div>
+      <div class="chart-body"><canvas id="chart-mcap"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr"><div class="chart-dot cd-a"></div>HARGA vs POLA BITCOIN</div>
+      <div class="chart-body"><canvas id="chart-btc"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HALVING EVENTS + ANNUAL PERFORMANCE -->
+  <div class="sh rev">
+    <span class="shp">marchel@sys:~$</span>
+    <span class="shc">cat ./report/halving_events.json</span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.5rem" class="rev">
+    <!-- Halving Events -->
+    <div class="tc">
+      <div class="tch"><div class="tcd" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div>HALVING EVENTS</div>
+      <div class="tcb" style="padding:.8rem;overflow-x:auto">
+        <table class="hvt" id="halving-table">
+          <thead><tr><th>#</th><th>Tanggal</th><th>Hari ke-</th><th>Hadiah Sebelum</th><th>Hadiah Setelah</th><th>Harga Saat Itu</th></tr></thead>
+          <tbody id="halving-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:1rem">Jalankan simulasi...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Annual Performance -->
+    <div class="tc">
+      <div class="tch"><div class="tcd"></div>KINERJA TAHUNAN</div>
+      <div class="tcb" style="padding:.8rem;max-height:280px;overflow-y:auto">
+        <table class="apt" id="annual-table">
+          <thead><tr><th>Tahun</th><th>Harga Awal</th><th>Harga Akhir</th><th>ROI</th></tr></thead>
+          <tbody id="annual-tbody"><tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:1rem">Jalankan simulasi...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="sh rev">
+    <span class="shp">marchel@sys:~$</span>
+    <span class="shc">python report.py</span>
+    <span class="sha">--executive-summary</span>
+  </div>
+  <div class="tc rev" id="exec-summary">
+    <div class="tch"><div class="tcd" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>RINGKASAN EKSEKUTIF</div>
+    <div class="tcb" id="exec-body" style="font-size:.82rem;line-height:1.9;color:var(--text)">
+      <span style="color:var(--text-dim)">Jalankan simulasi untuk melihat ringkasan eksekutif...</span>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<footer class="footer">
+  <div style="max-width:1200px;margin:0 auto">
+    <span style="color:var(--text-dim)">marchel@sys:~$ </span>
+    <span style="color:var(--amber)">./sabdarana --tokenomics</span>
+    <span style="color:var(--text-dim)"> — Data Sorcerers · </span>
+    <a href="projects.html">Projects</a>
+    <span style="color:var(--text-dim)"> · </span>
+    <a href="indollnet.html">IndoLLNet</a>
+    <span style="color:var(--text-dim)"> · </span>
+    <a href="arutala.html">Arutala</a>
+  </div>
+</footer>
+
+<script>
+/* ══ CURSOR ══ */
+(function(){
+  const cd=document.getElementById('cursor-dot'),cr=document.getElementById('cursor-ring');
+  if(!cd||!cr)return;
+  let mx=-100,my=-100,rx=-100,ry=-100;
+  const lp=(a,b,t)=>a+(b-a)*t;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cd.style.left=mx+'px';cd.style.top=my+'px'});
+  (function t(){rx=lp(rx,mx,.12);ry=lp(ry,my,.12);cr.style.left=rx+'px';cr.style.top=ry+'px';requestAnimationFrame(t)})();
+  document.addEventListener('mouseleave',()=>{cd.style.opacity=0;cr.style.opacity=0});
+  document.addEventListener('mouseenter',()=>{cd.style.opacity=1;cr.style.opacity=1});
+  document.addEventListener('mouseover',e=>{document.body.classList.toggle('ch',!!e.target.closest('a,button,.run-btn,.tc,.chart-card,input'))});
+})();
+
+/* ══ NAVBAR ══ */
+document.getElementById('nav-ham').addEventListener('click',()=>document.getElementById('nav-links').classList.toggle('open'));
+
+/* ══ REVEAL ══ */
+(function(){
+  const o=new IntersectionObserver((es)=>es.forEach((e,i)=>{if(e.isIntersecting){setTimeout(()=>e.target.classList.add('vis'),i*60);o.unobserve(e.target)}}),{threshold:.07});
+  document.querySelectorAll('.rev').forEach(el=>o.observe(el));
+})();
+
+/* ══ BG CANVAS ══ */
+(function(){
+  const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');
+  function rsz(){c.width=innerWidth;c.height=innerHeight}rsz();window.addEventListener('resize',rsz);
+  const pts=Array.from({length:45},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.1+.4,a:Math.random()*.18+.04}));
+  (function draw(){ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=c.width;if(p.x>c.width)p.x=0;if(p.y<0)p.y=c.height;if(p.y>c.height)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(255,179,0,'+p.a+')';ctx.fill()});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<80){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle='rgba(255,179,0,'+(0.04*(1-d/80))+')';ctx.lineWidth=.5;ctx.stroke()}}requestAnimationFrame(draw)})();
+})();
+
+/* ══ CONTROLS ══ */
+document.getElementById('p-halving').addEventListener('input',function(){
+  const y=(+this.value/365).toFixed(1);
+  document.getElementById('v-halving').textContent=y+' tahun';
+});
+document.getElementById('p-years').addEventListener('input',function(){
+  document.getElementById('v-years').textContent=this.value+' tahun';
+});
+
+/* ══ CHART REGISTRY ══ */
+const charts = {};
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+/* ══ CHART DEFAULTS ══ */
+Chart.defaults.color='#4a6b50';
+Chart.defaults.font.family="'Courier New',monospace";
+Chart.defaults.font.size=11;
+
+function chartDefaults(type){
+  return {
+    responsive:true,maintainAspectRatio:false,
+    animation:{duration:600},
+    plugins:{
+      legend:{labels:{color:'#4a6b50',boxWidth:12,font:{size:11}}},
+      tooltip:{
+        backgroundColor:'rgba(2,9,5,.95)',
+        borderColor:'rgba(0,255,65,.3)',borderWidth:1,
+        titleColor:'#e8f5e9',bodyColor:'#b0c8b4',
+        titleFont:{family:"'Courier New',monospace",size:11},
+        bodyFont:{family:"'Courier New',monospace",size:11},
+      }
+    },
+    scales:{
+      x:{grid:{color:'rgba(0,255,65,.07)'},ticks:{color:'#4a6b50',maxTicksLimit:8,font:{size:10}},border:{color:'rgba(0,255,65,.15)'}},
+      y:{grid:{color:'rgba(0,255,65,.07)'},ticks:{color:'#4a6b50',font:{size:10}},border:{color:'rgba(0,255,65,.15)'}}
+    }
+  };
+}
+
+/* ══ SIMULATION ENGINE (ported from Python) ══ */
+
+const BITCOIN_MILESTONES = [
+  [0,0.0009],[365,0.30],[730,3.00],[1095,13.50],[1460,250],[1825,320],
+  [2190,200],[2555,430],[2920,20000],[3285,3200],[3650,7200],[4015,29000],
+  [4380,69000],[4745,15500],[5110,25000],[5475,73000],[5840,120000]
+];
+
+function buildBitcoinPattern(totalDays){
+  const hari = BITCOIN_MILESTONES.map(m=>m[0]);
+  const harga = BITCOIN_MILESTONES.map(m=>m[1]);
+  const maxH = Math.max(...hari);
+  const lastPrice = harga[harga.length-1];
+  const result = new Float64Array(totalDays);
+  for(let d=0;d<totalDays;d++){
+    if(d<=maxH){
+      result[d] = interpolate(d,hari,harga)/0.0009;
+    } else {
+      const tnext=(d-maxH)/365.25, snext=tnext/4.0;
+      result[d]=(lastPrice/0.0009)*Math.pow(1.5,snext)*Math.pow(0.8,snext);
+    }
+  }
+  return result;
+}
+
+function interpolate(x,xs,ys){
+  if(x<=xs[0])return ys[0];
+  if(x>=xs[xs.length-1])return ys[ys.length-1];
+  for(let i=0;i<xs.length-1;i++){
+    if(x>=xs[i]&&x<=xs[i+1]){
+      const t=(x-xs[i])/(xs[i+1]-xs[i]);
+      return ys[i]+(ys[i+1]-ys[i])*t;
+    }
+  }
+  return ys[ys.length-1];
+}
+
+function dailyReward(day,initialReward,halvingInterval){
+  const n=Math.floor(day/halvingInterval);
+  return initialReward/Math.pow(2,n);
+}
+
+function nextPrice(day,prevPrice,bitcoinPattern,initialPrice){
+  const idx=Math.min(day,bitcoinPattern.length-1);
+  const targetPrice=initialPrice*bitcoinPattern[idx];
+  const years=day/365.25;
+  let vol=years<2?0.10:years<5?0.07:years<10?0.05:0.035;
+  // Box-Muller for normal random
+  const u1=Math.random(),u2=Math.random();
+  let rnd=Math.sqrt(-2*Math.log(u1+1e-10))*Math.cos(2*Math.PI*u2);
+  let daily=Math.max(-0.18,Math.min(0.18,rnd*vol));
+  const dir=prevPrice>0?(targetPrice-prevPrice)/prevPrice:0;
+  const trend=Math.sign(dir)*Math.min(Math.abs(dir),0.1)*0.02;
+  let np=prevPrice*(1+daily+trend);
+  np=Math.max(np,prevPrice*0.72);
+  np=Math.max(np,initialPrice*0.05);
+  return np;
+}
+
+function runSimulation(){
+  const btn=document.getElementById('run-btn');
+  btn.classList.add('running');btn.textContent='⏳ RUNNING...';
+
+  // grab params
+  const totalSupply=+document.getElementById('p-supply').value||17081945;
+  const initReward=+document.getElementById('p-reward').value||50;
+  const halvingInterval=+document.getElementById('p-halving').value||1460;
+  const years=+document.getElementById('p-years').value||25;
+  const initPrice=+document.getElementById('p-price').value||1000;
+  const totalDays=years*365;
+
+  setTimeout(()=>{
+    const btcPattern=buildBitcoinPattern(totalDays);
+
+    // arrays
+    const dates=[], rewards=[], cumSupply=[], remaining=[], prices=[], mcap=[];
+    let supplyNow=0, priceNow=initPrice;
+    const startYear=2024;
+
+    for(let d=0;d<totalDays;d++){
+      let rew=dailyReward(d,initReward,halvingInterval);
+      const rem=totalSupply-supplyNow;
+      if(rem<=0){rew=0;}
+      else if(rew>rem){rew=rem;}
+      supplyNow+=rew;
+      priceNow=nextPrice(d,priceNow,btcPattern,initPrice);
+
+      // date string (year only for labels, keep every Nth)
+      const yr=startYear+Math.floor(d/365);
+      const mo=Math.floor((d%365)/30);
+      dates.push(`${yr}-${String(mo+1).padStart(2,'0')}`);
+      rewards.push(rew);
+      cumSupply.push(supplyNow);
+      remaining.push(totalSupply-supplyNow);
+      prices.push(priceNow);
+      mcap.push(supplyNow*priceNow);
+
+      if(rem<=0)break;
+    }
+
+    const actualDays=prices.length;
+
+    // compute stats
+    const finalPrice=prices[actualDays-1];
+    const maxPrice=Math.max(...prices);
+    const maxMcap=Math.max(...mcap);
+    const roi=(finalPrice/initPrice).toFixed(1);
+    const supplyPct=((supplyNow/totalSupply)*100).toFixed(1);
+
+    // update stat strip
+    document.getElementById('stat-price').textContent='Rp'+fmt(finalPrice);
+    document.getElementById('stat-roi').textContent=roi+'x';
+    document.getElementById('stat-supply').textContent=supplyPct+'%';
+    document.getElementById('stat-mcap').textContent='Rp'+fmtB(maxMcap);
+    document.getElementById('stat-days').textContent=actualDays+' hari';
+
+    // subsample for charts (max 500 points for perf)
+    const step=Math.max(1,Math.floor(actualDays/500));
+    const lbls=[], ps=[], cs=[], rs=[], ms=[], bps=[];
+    for(let i=0;i<actualDays;i+=step){
+      const yr=startYear+Math.floor(i/365);
+      lbls.push(yr+'-'+String(Math.floor((i%365)/30)+1).padStart(2,'0'));
+      ps.push(prices[i]);
+      cs.push((cumSupply[i]/totalSupply*100).toFixed(2));
+      rs.push(rewards[i]);
+      ms.push(mcap[i]);
+      bps.push(initPrice*btcPattern[Math.min(i,btcPattern.length-1)]);
+    }
+    const roiArr=ps.map(p=>p/initPrice);
+
+    // find halving events
+    const halvEvents=[];
+    for(let n=1;n*halvingInterval<actualDays;n++){
+      const d=n*halvingInterval;
+      const yr=startYear+Math.floor(d/365);
+      const beforeR=initReward/Math.pow(2,n-1);
+      const afterR=initReward/Math.pow(2,n);
+      halvEvents.push({n,day:d,year:yr,price:prices[Math.min(d,prices.length-1)],before:beforeR,after:afterR});
+    }
+
+    // annual performance
+    const annualPerf=[];
+    for(let y=0;y<years&&(y*365)<actualDays;y++){
+      const d0=y*365, d1=Math.min((y+1)*365-1,actualDays-1);
+      annualPerf.push({year:startYear+y,start:prices[d0],end:prices[d1]});
+    }
+
+    // render charts
+    renderPriceChart(lbls,ps,halvEvents,actualDays,step,startYear);
+    renderSupplyChart(lbls,cs);
+    renderEmissionChart(lbls,rs);
+    renderRoiChart(lbls,roiArr);
+    renderMcapChart(lbls,ms);
+    renderBtcChart(lbls,ps,bps);
+
+    // render tables
+    renderHalvingTable(halvEvents);
+    renderAnnualTable(annualPerf);
+    renderExecSummary({initPrice,finalPrice,maxPrice,roi,totalSupply,supplyNow,maxMcap,actualDays,annualPerf,startYear});
+
+    // show price chart canvas
+    document.getElementById('price-loading').querySelector('.chart-loading').style.display='none';
+    document.getElementById('chart-price').style.display='block';
+
+    btn.classList.remove('running');btn.textContent='▶ JALANKAN SIMULASI';
+  },50);
+}
+
+function renderPriceChart(lbls,ps,halvEvents,actualDays,step,startYear){
+  destroyChart('price');
+  const canvas=document.getElementById('chart-price');
+  const def=chartDefaults();
+  def.scales.y.type='logarithmic';
+  def.scales.y.ticks.callback=v=>'Rp'+fmt(v);
+  def.plugins.tooltip.callbacks={label:ctx=>'Rp'+fmt(ctx.parsed.y)};
+
+  const halvAnnotations={};
+  halvEvents.forEach((ev,i)=>{
+    const idx=Math.floor(ev.day/step);
+    if(idx<lbls.length){
+      halvAnnotations['halv'+i]={type:'line',scaleID:'x',value:lbls[Math.min(idx,lbls.length-1)],borderColor:'rgba(255,68,68,.7)',borderWidth:1.5,borderDash:[4,3],label:{content:'Halving '+ev.n,enabled:true,color:'#ff4444',font:{size:9}}};
+    }
+  });
+
+  charts['price']=new Chart(canvas,{
+    type:'line',
+    data:{labels:lbls,datasets:[
+      {label:'Harga Token',data:ps,borderColor:'#ffb300',borderWidth:2,pointRadius:0,fill:false,tension:0.2},
+    ]},
+    options:{...def,
+      plugins:{...def.plugins},
+    }
+  });
+}
+
+function renderSupplyChart(lbls,cs){
+  destroyChart('supply');
+  const def=chartDefaults();
+  def.scales.y.max=105;
+  def.scales.y.ticks.callback=v=>v+'%';
+  charts['supply']=new Chart(document.getElementById('chart-supply'),{
+    type:'line',
+    data:{labels:lbls,datasets:[{label:'% Didistribusi',data:cs,borderColor:'#00e5ff',backgroundColor:'rgba(0,229,255,.08)',borderWidth:2,pointRadius:0,fill:true,tension:0.3}]},
+    options:def
+  });
+}
+
+function renderEmissionChart(lbls,rs){
+  destroyChart('emission');
+  const def=chartDefaults();
+  def.scales.y.type='logarithmic';
+  def.scales.y.ticks.callback=v=>v+' tkn';
+  charts['emission']=new Chart(document.getElementById('chart-emission'),{
+    type:'line',
+    data:{labels:lbls,datasets:[{label:'Token/Hari',data:rs,borderColor:'#ffb300',backgroundColor:'rgba(255,179,0,.07)',borderWidth:2,pointRadius:0,fill:true,tension:0}]},
+    options:def
+  });
+}
+
+function renderRoiChart(lbls,roi){
+  destroyChart('roi');
+  const def=chartDefaults();
+  def.scales.y.type='logarithmic';
+  def.scales.y.ticks.callback=v=>v+'x';
+  charts['roi']=new Chart(document.getElementById('chart-roi'),{
+    type:'line',
+    data:{labels:lbls,datasets:[{label:'ROI (x)',data:roi,borderColor:'#00ff41',borderWidth:2,pointRadius:0,fill:false,tension:0.2}]},
+    options:def
+  });
+}
+
+function renderMcapChart(lbls,ms){
+  destroyChart('mcap');
+  const def=chartDefaults();
+  def.scales.y.type='logarithmic';
+  def.scales.y.ticks.callback=v=>v>=1e9?'Rp'+( v/1e9).toFixed(1)+'B':v>=1e6?'Rp'+(v/1e6).toFixed(1)+'M':'Rp'+fmt(v);
+  charts['mcap']=new Chart(document.getElementById('chart-mcap'),{
+    type:'line',
+    data:{labels:lbls,datasets:[{label:'Market Cap',data:ms,borderColor:'#00ff41',backgroundColor:'rgba(0,255,65,.06)',borderWidth:2.5,pointRadius:0,fill:true,tension:0.2}]},
+    options:def
+  });
+}
+
+function renderBtcChart(lbls,ps,bps){
+  destroyChart('btc');
+  const def=chartDefaults();
+  def.scales.y.type='logarithmic';
+  def.scales.y.ticks.callback=v=>'Rp'+fmt(v);
+  charts['btc']=new Chart(document.getElementById('chart-btc'),{
+    type:'line',
+    data:{labels:lbls,datasets:[
+      {label:'Harga Aktual',data:ps,borderColor:'#ffb300',borderWidth:2,pointRadius:0,fill:false,tension:0.2},
+      {label:'Pola Bitcoin',data:bps,borderColor:'#4a6b50',borderWidth:1.5,pointRadius:0,fill:false,tension:0.2,borderDash:[4,3]},
+    ]},
+    options:def
+  });
+}
+
+function renderHalvingTable(events){
+  const tb=document.getElementById('halving-tbody');
+  if(!events.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:1rem">Tidak ada halving dalam periode ini</td></tr>';return;}
+  tb.innerHTML=events.map(ev=>`
+    <tr>
+      <td class="val-a">${ev.n}</td>
+      <td>${ev.year}</td>
+      <td class="val-c">${ev.day.toLocaleString()}</td>
+      <td>${ev.before.toFixed(2)}</td>
+      <td class="val-g">${ev.after.toFixed(4)}</td>
+      <td class="val-a">Rp${fmt(ev.price)}</td>
+    </tr>`).join('');
+}
+
+function renderAnnualTable(annual){
+  const tb=document.getElementById('annual-tbody');
+  tb.innerHTML=annual.map(r=>{
+    const roi=((r.end/r.start-1)*100);
+    const cls=roi>0?'pos':roi<0?'neg':'neu';
+    const sign=roi>0?'+':'';
+    return `<tr>
+      <td>${r.year}</td>
+      <td>Rp${fmt(r.start)}</td>
+      <td>Rp${fmt(r.end)}</td>
+      <td class="${cls}">${sign}${roi.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderExecSummary({initPrice,finalPrice,maxPrice,roi,totalSupply,supplyNow,maxMcap,actualDays,annualPerf,startYear}){
+  const body=document.getElementById('exec-body');
+  const avgRoi=annualPerf.slice(0,10).reduce((s,r)=>{const p=(r.end/r.start-1)*100;return s+p;},0)/(annualPerf.slice(0,10).length||1);
+  body.innerHTML=`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+    <div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Harga Awal:&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color:var(--text-bright)">Rp${fmt(initPrice)}</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Harga Akhir:&nbsp;&nbsp;&nbsp;</span><span style="color:var(--amber);text-shadow:var(--glow-a)">Rp${fmt(finalPrice)}</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Harga Tertinggi:&nbsp;</span><span style="color:var(--green);text-shadow:var(--glow-g)">Rp${fmt(maxPrice)}</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Total ROI:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span style="color:var(--amber)">${roi}x</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Avg ROI/tahun:&nbsp;&nbsp;</span><span class="${avgRoi>=0?'pos':'neg'}">${avgRoi>=0?'+':''}${avgRoi.toFixed(1)}%</span></div>
+    </div>
+    <div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Total Pasokan:&nbsp;&nbsp;</span><span style="color:var(--text-bright)">${totalSupply.toLocaleString()}</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Didistribusi:&nbsp;&nbsp;&nbsp;</span><span style="color:var(--cyan)">${supplyNow.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')} (${((supplyNow/totalSupply)*100).toFixed(1)}%)</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Market Cap Puncak:</span><span style="color:var(--green)"> Rp${fmtB(maxMcap)}</span></div>
+      <div style="margin-bottom:.6rem"><span style="color:var(--text-dim)">Durasi Simulasi:&nbsp;</span><span style="color:var(--text-bright)">${actualDays} hari</span></div>
+    </div>
+  </div>
+  <div style="margin-top:.8rem;padding-top:.8rem;border-top:1px dotted var(--border);font-size:.75rem;color:var(--text-dim)">
+    <span style="color:var(--green)">◆</span>&nbsp;Simulasi menggunakan pola historis Bitcoin (2009–2024) sebagai proxy pertumbuhan harga.<br>
+    <span style="color:var(--amber)">◆</span>&nbsp;Volatilitas harian menurun dari 10% (tahun 1-2) ke 3.5% (tahun 10+) seiring maturitas pasar.<br>
+    <span style="color:var(--cyan)">◆</span>&nbsp;Halving setiap ${document.getElementById('p-halving').value} hari memotong emisi setengahnya — deflasi by design.
+  </div>`;
+}
+
+/* ══ FORMATTERS ══ */
+function fmt(n){
+  if(n>=1e9)return (n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  if(n>=1000)return Math.round(n).toLocaleString('id-ID');
+  if(n<1)return n.toFixed(4);
+  return n.toFixed(2);
+}
+function fmtB(n){
+  if(n>=1e12)return (n/1e12).toFixed(2)+' Triliun';
+  if(n>=1e9)return (n/1e9).toFixed(2)+' Miliar';
+  if(n>=1e6)return (n/1e6).toFixed(2)+'M';
+  return Math.round(n).toLocaleString('id-ID');
+}
+
+/* ══ AUTO-RUN on load ══ */
+window.addEventListener('load',()=>setTimeout(runSimulation,300));
+</script>
+</body>
+</html>
