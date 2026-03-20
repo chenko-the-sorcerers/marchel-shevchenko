@@ -981,3 +981,13 @@
     return { init, open: openTerminal, close: closeTerminal, toggle: toggleTerminal, matrix: triggerMatrix, hack: triggerHack };
   
   })();
+
+/* ═══════════════════════════════════════════════════════
+   AUTO-INITIALIZATION (DRY Principle)
+   Memastikan terminal selalu muncul di setiap halaman
+═══════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  if (typeof Terminal !== 'undefined') {
+    Terminal.init();
+  }
+});
