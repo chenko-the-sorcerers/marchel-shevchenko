@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nusantara Digital — Aksara Kingdom</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#050a05;overflow:hidden;font-family:'Share Tech Mono',monospace;}
+
+:root{
+  --green:#1aff6e;--cyan:#00ccff;--amber:#ffa500;--red:#ff4444;
+  --panel-bg:rgba(4,12,4,0.95);--border-color:#1a4a2a;
+}
+
+#game{position:relative;width:100vw;height:100vh;overflow:hidden;}
+#world-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+
+.scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:200;}
+.vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.75) 100%);pointer-events:none;z-index:201;}
+
+/* TOP HUD */
+#hud-top{
+  position:absolute;top:0;left:0;right:0;height:48px;
+  background:linear-gradient(180deg,rgba(2,10,3,0.98),rgba(4,14,5,0.95));
+  border-bottom:1px solid var(--green);z-index:100;
+  display:flex;align-items:center;justify-content:space-between;padding:0 12px;
+}
+#hud-top::after{content:'';position:absolute;bottom:-3px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),var(--cyan),var(--green),transparent);opacity:0.4;}
+
+.hud-sys{font-family:'Orbitron',sans-serif;font-size:11px;color:var(--green);letter-spacing:3px;font-weight:700;}
+.hud-center{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.hud-region{font-size:10px;color:var(--cyan);letter-spacing:3px;}
+.hud-minibars{display:flex;gap:10px;}
+.minibar{display:flex;align-items:center;gap:5px;font-size:9px;}
+.minibar-lbl{width:14px;}
+.minibar-track{width:70px;height:5px;background:#050e05;border:1px solid #1a3a1a;border-radius:2px;overflow:hidden;}
+.minibar-fill{height:100%;border-radius:2px;transition:width .4s;}
+.minibar-val{color:#556655;min-width:36px;}
+.hud-right{display:flex;align-items:center;gap:14px;}
+.lv-badge{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--amber);letter-spacing:1px;}
+#clock{font-family:'Orbitron',sans-serif;font-size:12px;color:var(--green);letter-spacing:2px;font-weight:700;min-width:72px;text-align:right;}
+
+/* LEFT PANEL */
+#panel-left{
+  position:absolute;top:54px;left:8px;width:158px;
+  background:var(--panel-bg);border:1px solid var(--border-color);border-radius:4px;
+  padding:10px;z-index:100;
+}
+.char-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.portrait{width:48px;height:48px;background:#0f1e0f;border:2px solid var(--green);border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;}
+.portrait-hat{width:26px;height:9px;background:#f0f0f0;border-radius:3px 3px 0 0;border:1px solid #bbb;margin-bottom:-1px;}
+.portrait-head{width:20px;height:16px;background:#d4a574;border-radius:2px;border:1px solid #8a6040;}
+.portrait-collar{width:24px;height:5px;background:#cc3322;border-radius:0 0 2px 2px;}
+.char-name-lbl{font-family:'Orbitron',sans-serif;font-size:9px;color:var(--green);letter-spacing:2px;display:block;margin-bottom:5px;}
+.stat-row{display:flex;align-items:center;gap:4px;margin-bottom:4px;}
+.stat-lbl{font-size:8px;width:14px;}
+.stat-track{flex:1;height:7px;background:#050e05;border:1px solid #1a2a1a;border-radius:3px;overflow:hidden;}
+.stat-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+.hp-bar{background:linear-gradient(90deg,#00cc44,#1aff6e);}
+.mp-bar{background:linear-gradient(90deg,#0088cc,#00ccff);}
+.xp-bar{background:linear-gradient(90deg,#aa6600,#ffaa00);}
+.stat-val{font-size:8px;color:#556655;min-width:32px;text-align:right;}
+.mini-stats{margin-top:8px;border-top:1px solid #1a2a1a;padding-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.mini-stat{font-size:8px;display:flex;justify-content:space-between;}
+.mini-stat-k{color:#445544;}
+.mini-stat-v{color:var(--cyan);}
+.shard-row{display:flex;align-items:center;gap:5px;font-size:8px;margin-top:6px;}
+.shard-lbl{color:#445544;width:50px;}
+.shard-track{flex:1;height:4px;background:#050e05;border:1px solid #1a2a1a;border-radius:2px;overflow:hidden;}
+.shard-fill-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,#1aaa50,var(--green));transition:width .4s;}
+.shard-v{color:#334433;min-width:24px;text-align:right;}
+.status-row{margin-top:6px;display:flex;gap:3px;flex-wrap:wrap;}
+.status-badge{font-size:7px;padding:2px 5px;border-radius:2px;border:1px solid;}
+.s-active{background:rgba(26,255,110,0.1);border-color:#1a5a2a;color:var(--green);}
+.s-quest{background:rgba(255,170,0,0.1);border-color:#5a4a00;color:var(--amber);}
+
+/* TAB BAR */
+#tab-bar{
+  position:absolute;top:48px;left:170px;right:94px;height:24px;
+  background:rgba(3,8,3,0.97);border-bottom:1px solid #1a2a1a;z-index:100;
+  display:flex;align-items:stretch;
+}
+.tab{display:flex;align-items:center;gap:6px;padding:0 12px;font-size:9px;color:#334433;cursor:pointer;border-right:1px solid #1a2a1a;transition:all .2s;}
+.tab.active{color:var(--green);background:rgba(26,255,110,0.06);border-bottom:2px solid var(--green);}
+.tab-close{font-size:8px;color:#2a3a2a;}
+.tab-extra{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;gap:8px;padding:0 10px;font-size:9px;color:#445544;border-left:1px solid #1a2a1a;}
+.tab-extra span{color:var(--amber);}
+
+/* RIGHT MENU */
+#panel-right{
+  position:absolute;top:54px;right:8px;width:82px;
+  background:var(--panel-bg);border:1px solid var(--border-color);border-radius:4px;
+  padding:8px 6px;z-index:100;display:flex;flex-direction:column;gap:5px;
+}
+.menu-btn{
+  background:rgba(8,22,8,0.95);border:1px solid #1a4a2a;color:var(--green);
+  font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;
+  padding:7px 4px;text-align:center;cursor:pointer;border-radius:3px;
+  transition:all .15s;user-select:none;
+}
+.menu-btn:hover{background:rgba(26,255,110,0.15);border-color:var(--green);}
+.menu-btn:active,.menu-btn.pressed{background:rgba(26,255,110,0.25);transform:scale(0.96);}
+.enter-btn{background:rgba(0,80,160,0.3)!important;border-color:#004499!important;color:var(--cyan)!important;margin-top:4px;}
+.enter-btn:hover{background:rgba(0,130,220,0.3)!important;border-color:var(--cyan)!important;}
+
+/* DIALOGUE */
+#dialogue-bar{
+  position:absolute;bottom:52px;left:8px;right:196px;min-height:56px;
+  background:var(--panel-bg);border:1px solid var(--border-color);border-radius:4px;
+  padding:8px 12px;z-index:100;
+}
+#dialogue-text{font-size:11px;color:#aaffcc;line-height:1.7;}
+.sys-tag{color:var(--green);font-weight:700;}
+.npc-tag{color:var(--amber);font-weight:700;}
+.cursor{display:inline-block;width:7px;height:11px;background:var(--green);animation:blink 1s step-end infinite;vertical-align:text-bottom;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* DPAD */
+#dpad{position:absolute;bottom:6px;right:8px;width:90px;height:90px;z-index:100;}
+.dp{position:absolute;width:26px;height:26px;background:rgba(8,20,8,0.95);border:1px solid #1a4a2a;border-radius:3px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;user-select:none;}
+.dp:hover{background:rgba(26,255,110,0.15);border-color:var(--green);}
+.dp:active{background:rgba(26,255,110,0.35);transform:scale(0.9);}
+.dp-up{top:0;left:32px;} .dp-down{bottom:0;left:32px;} .dp-left{top:32px;left:0;} .dp-right{top:32px;right:0;}
+.dp-c{top:32px;left:32px;background:rgba(26,255,110,0.06);border-color:#1a3a1a;border-radius:50%;}
+.arr{width:0;height:0;border:5px solid transparent;}
+.arr-u{border-bottom:7px solid var(--green);border-top:none;margin-top:-2px;}
+.arr-d{border-top:7px solid var(--green);border-bottom:none;margin-top:2px;}
+.arr-l{border-right:7px solid var(--green);border-left:none;margin-left:-2px;}
+.arr-r{border-left:7px solid var(--green);border-right:none;margin-right:-2px;}
+
+/* SIDE BUTTONS */
+#side-btns{position:absolute;bottom:52px;right:96px;display:flex;flex-direction:column;gap:3px;z-index:100;}
+.side-btn{background:rgba(6,14,6,0.9);border:1px solid #1a2a1a;color:#445544;font-size:9px;padding:5px 8px;border-radius:2px;cursor:pointer;text-align:center;transition:all .2s;letter-spacing:1px;}
+.side-btn:hover{color:var(--green);border-color:#1a4a2a;}
+
+/* CORNERS */
+.corner{position:absolute;width:18px;height:18px;z-index:300;pointer-events:none;}
+.corner::before,.corner::after{content:'';position:absolute;background:var(--green);}
+.corner::before{width:100%;height:2px;top:0;left:0;}
+.corner::after{width:2px;height:100%;top:0;left:0;}
+.c-tl{top:0;left:0;} .c-tr{top:0;right:0;transform:scaleX(-1);}
+.c-bl{bottom:0;left:0;transform:scaleY(-1);} .c-br{bottom:0;right:0;transform:scale(-1);}
+
+/* POPUPS */
+#quest-popup,#info-popup{
+  position:absolute;top:80px;right:96px;width:220px;
+  background:var(--panel-bg);border:1px solid #2a5a3a;border-radius:4px;
+  padding:10px;z-index:150;display:none;
+}
+#info-popup{border-color:#1a4a6a;width:200px;}
+.popup-title{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1px;border-bottom:1px solid #2a3a2a;padding-bottom:5px;margin-bottom:7px;}
+.popup-title.q{color:var(--amber);}
+.popup-title.i{color:var(--cyan);}
+.popup-close{float:right;font-size:9px;color:#334433;cursor:pointer;margin-left:8px;}
+.popup-close:hover{color:var(--red);}
+.quest-item{font-size:9px;color:#aabbaa;margin-bottom:5px;display:flex;gap:6px;align-items:flex-start;}
+.q-check{color:var(--green);flex-shrink:0;}
+.q-x{color:#334433;flex-shrink:0;}
+.info-row{font-size:9px;color:#88aabb;margin-bottom:3px;display:flex;justify-content:space-between;}
+.info-v{color:var(--cyan);}
+
+/* TALK POPUP */
+#talk-popup{
+  position:absolute;bottom:116px;left:8px;right:8px;
+  background:rgba(2,8,3,0.98);border:1px solid #2a5a3a;border-radius:4px;
+  padding:10px 14px;z-index:150;display:none;
+}
+.talk-npc-name{font-family:'Rajdhani',sans-serif;font-size:12px;color:var(--amber);font-weight:700;letter-spacing:2px;margin-bottom:6px;}
+.talk-text{font-size:11px;color:#bbddbb;line-height:1.8;margin-bottom:8px;}
+.talk-choices{display:flex;flex-direction:column;gap:4px;}
+.talk-choice{font-size:10px;color:#778877;border:1px solid #1a3a1a;padding:5px 10px;border-radius:2px;cursor:pointer;transition:all .2s;}
+.talk-choice:hover{color:var(--green);border-color:#1a5a2a;background:rgba(26,255,110,0.07);}
+
+/* NOTIFICATION */
+#notif{
+  position:absolute;top:60px;left:50%;transform:translateX(-50%);
+  background:rgba(3,15,6,0.97);border:1px solid var(--green);border-radius:3px;
+  padding:6px 16px;font-size:10px;color:var(--green);letter-spacing:2px;
+  z-index:300;pointer-events:none;opacity:0;transition:opacity .3s;
+  font-family:'Orbitron',sans-serif;text-align:center;white-space:nowrap;
+}
+
+/* LEVEL UP */
+#level-up{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:rgba(2,10,4,0.98);border:2px solid var(--amber);border-radius:6px;
+  padding:20px 32px;z-index:400;display:none;text-align:center;
+}
+.lvup-title{font-family:'Orbitron',sans-serif;font-size:18px;color:var(--amber);letter-spacing:4px;margin-bottom:8px;}
+.lvup-sub{font-size:11px;color:#aaffcc;margin-bottom:12px;}
+.lvup-btn{background:rgba(255,170,0,0.2);border:1px solid var(--amber);color:var(--amber);font-family:'Orbitron',sans-serif;font-size:10px;padding:8px 20px;border-radius:3px;cursor:pointer;letter-spacing:2px;}
+.lvup-btn:hover{background:rgba(255,170,0,0.35);}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="world-canvas"></canvas>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
+
+  <!-- TOP HUD -->
+  <div id="hud-top">
+    <div class="hud-sys">SYS://MARCHEL</div>
+    <div class="hud-center">
+      <div class="hud-region">AKARA: &nbsp;NUSANTARA DIGITAL &nbsp;<span style="color:var(--green)">■</span></div>
+      <div class="hud-minibars">
+        <div class="minibar">
+          <span class="minibar-lbl" style="color:var(--green)">HP</span>
+          <div class="minibar-track"><div class="minibar-fill hp-bar" id="hp-mini" style="width:88%"></div></div>
+          <span class="minibar-val" id="hp-top">99/112</span>
+        </div>
+        <div class="minibar">
+          <span class="minibar-lbl" style="color:var(--cyan)">MP</span>
+          <div class="minibar-track"><div class="minibar-fill mp-bar" id="mp-mini" style="width:76%"></div></div>
+          <span class="minibar-val" id="mp-top">85/112</span>
+        </div>
+      </div>
+    </div>
+    <div class="hud-right">
+      <div class="lv-badge">LEVEL: <span id="lv-display">1</span> &nbsp;AKSARA KINGDOM</div>
+      <div id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div id="tab-bar">
+    <div class="tab" onclick="switchTab(this,'AKLS')"><span>AKLS</span><span class="tab-close">✕</span></div>
+    <div class="tab active" onclick="switchTab(this,'NUSANTARA')"><span>NUSANTARA DIGITAL</span><span class="tab-close">✕</span></div>
+    <div class="tab-extra">LV<span id="tab-lv">1</span>&nbsp; <span>◆<span id="tab-gold">36</span></span>&nbsp; ✕1 &nbsp;<span style="color:#445544"><span id="tab-shards">27</span>/46</span></div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div id="panel-left">
+    <div class="char-header">
+      <div class="portrait">
+        <div class="portrait-hat"></div>
+        <div class="portrait-head"></div>
+        <div class="portrait-collar"></div>
+      </div>
+      <div style="flex:1">
+        <span class="char-name-lbl">MARCHEL</span>
+        <div class="stat-row">
+          <span class="stat-lbl" style="color:var(--green)">HP</span>
+          <div class="stat-track"><div class="stat-fill hp-bar" id="hp-bar" style="width:88%"></div></div>
+          <span class="stat-val" id="hp-val">99/112</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl" style="color:var(--cyan)">MP</span>
+          <div class="stat-track"><div class="stat-fill mp-bar" id="mp-bar" style="width:76%"></div></div>
+          <span class="stat-val" id="mp-val">85/112</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-lbl" style="color:var(--amber)">XP</span>
+          <div class="stat-track"><div class="stat-fill xp-bar" id="xp-bar" style="width:58%"></div></div>
+          <span class="stat-val" id="xp-val">580/1000</span>
+        </div>
+      </div>
+    </div>
+    <div class="mini-stats">
+      <div class="mini-stat"><span class="mini-stat-k">ATK</span><span class="mini-stat-v">42</span></div>
+      <div class="mini-stat"><span class="mini-stat-k">DEF</span><span class="mini-stat-v">28</span></div>
+      <div class="mini-stat"><span class="mini-stat-k">AGI</span><span class="mini-stat-v">35</span></div>
+      <div class="mini-stat"><span class="mini-stat-k">INT</span><span class="mini-stat-v">67</span></div>
+      <div class="mini-stat"><span class="mini-stat-k">GOLD</span><span class="mini-stat-v" id="gold-v">◆36</span></div>
+      <div class="mini-stat"><span class="mini-stat-k">STEPS</span><span class="mini-stat-v" id="steps-v">0</span></div>
+    </div>
+    <div class="shard-row">
+      <span class="shard-lbl">AKSARA</span>
+      <div class="shard-track"><div class="shard-fill-bar" id="shard-fill" style="width:58%"></div></div>
+      <span class="shard-v" id="shard-v">27/46</span>
+    </div>
+    <div class="status-row">
+      <span class="status-badge s-active">ACTIVE</span>
+      <span class="status-badge s-quest">QUEST</span>
+      <span class="status-badge" id="near-badge" style="display:none;background:rgba(0,200,255,0.1);border-color:#004466;color:var(--cyan);font-size:7px;padding:2px 5px;border-radius:2px;">NEARBY</span>
+    </div>
+  </div>
+
+  <!-- RIGHT MENU -->
+  <div id="panel-right">
+    <div class="menu-btn" id="btn-info" onclick="togglePopup('info')">INFO</div>
+    <div class="menu-btn" id="btn-quest" onclick="togglePopup('quest')">QUEST</div>
+    <div class="menu-btn" id="btn-talk" onclick="togglePopup('talk')">TALK</div>
+    <div class="menu-btn enter-btn" onclick="doEnter()">ENTER</div>
+  </div>
+
+  <!-- INFO POPUP -->
+  <div id="info-popup">
+    <div class="popup-title i"><span class="popup-close" onclick="closeAll()">✕</span>PLAYER INFO</div>
+    <div class="info-row"><span>Class</span><span class="info-v">AKSARA CHEF</span></div>
+    <div class="info-row"><span>Level</span><span class="info-v" id="i-lv">1</span></div>
+    <div class="info-row"><span>Region</span><span class="info-v">Aksara Kingdom</span></div>
+    <div class="info-row"><span>Zone</span><span class="info-v">Nusantara Digital</span></div>
+    <div class="info-row"><span>Data Shards</span><span class="info-v" id="i-shards">27/46</span></div>
+    <div class="info-row"><span>Gold</span><span class="info-v" id="i-gold">◆36</span></div>
+    <div class="info-row"><span>Steps</span><span class="info-v" id="i-steps">0</span></div>
+    <div class="info-row"><span>NPC Talks</span><span class="info-v" id="i-talks">0</span></div>
+  </div>
+
+  <!-- QUEST POPUP -->
+  <div id="quest-popup">
+    <div class="popup-title q"><span class="popup-close" onclick="closeAll()">✕</span>ACTIVE QUESTS</div>
+    <div class="quest-item"><span class="q-check">✓</span><span>Locate Aksara Guardian NPC</span></div>
+    <div class="quest-item"><span class="q-x" id="q2">○</span><span>Collect 46 Aksara data shards (<span id="q-shards">27</span>/46)</span></div>
+    <div class="quest-item"><span class="q-x" id="q3">○</span><span>Enter Pura Gksara Knowledge Node</span></div>
+    <div class="quest-item"><span class="q-x">○</span><span>Decrypt ancient script fragments</span></div>
+    <div class="quest-item"><span class="q-x">○</span><span>Restore the Digital Data Tree</span></div>
+  </div>
+
+  <!-- TALK POPUP -->
+  <div id="talk-popup">
+    <div class="talk-npc-name">AKSARA GUARDIAN</div>
+    <div class="talk-text" id="talk-body">"Selamat datang, pengelana. Pohon data ini menyimpan kearifan Nusantara — tulisan leluhur yang terkodifikasi dalam sistem AI kuno. Kamu harus mengumpulkan 46 shard untuk memulihkannya."</div>
+    <div class="talk-choices">
+      <div class="talk-choice" onclick="talkChoice(0)">[1] Apa itu Aksara Kingdom?</div>
+      <div class="talk-choice" onclick="talkChoice(1)">[2] Bagaimana cara mendapatkan data shard?</div>
+      <div class="talk-choice" onclick="talkChoice(2)">[3] Ceritakan tentang Pohon Data.</div>
+      <div class="talk-choice" onclick="talkClose()">[4] Selesai. Terima kasih.</div>
+    </div>
+  </div>
+
+  <!-- DIALOGUE BAR -->
+  <div id="dialogue-bar">
+    <div id="dialogue-text"><span class="sys-tag">[SYS]</span> Map Expanded. Menginisiasi Dynamic Camera...<span class="cursor"></span></div>
+  </div>
+
+  <div id="side-btns">
+    <div class="side-btn" onclick="showNotif('USE WASD / ARROW KEYS TO MOVE')">HELP</div>
+    <div class="side-btn" onclick="closeAll()">BACK</div>
+  </div>
+
+  <!-- DPAD -->
+  <div id="dpad">
+    <div class="dp dp-up" id="dp-u"><div class="arr arr-u"></div></div>
+    <div class="dp dp-down" id="dp-d"><div class="arr arr-d"></div></div>
+    <div class="dp dp-left" id="dp-l"><div class="arr arr-l"></div></div>
+    <div class="dp dp-right" id="dp-r"><div class="arr arr-r"></div></div>
+    <div class="dp dp-c"></div>
+  </div>
+
+  <!-- LEVEL UP MODAL -->
+  <div id="level-up">
+    <div class="lvup-title">LEVEL UP!</div>
+    <div class="lvup-sub" id="lvup-sub">Kamu mencapai Level 2 — Aksara Adept</div>
+    <button class="lvup-btn" onclick="closeLevelUp()">CONTINUE</button>
+  </div>
+
+  <div id="notif"></div>
+</div>
+
+<script>
+const canvas=document.getElementById('world-canvas');
+const ctx=canvas.getContext('2d');
+
+const G={
+  player:{x:320,y:480,dx:0,dy:0,speed:2.2,hp:99,maxHp:112,mp:85,maxMp:112,xp:580,maxXp:1000,level:1,steps:0,talks:0,gold:36,entered:false},
+  camera:{x:0,y:0},
+  time:0,
+  particles:[],
+  npcNear:false,
+  treeNear:false,
+  shards:27,
+  totalShards:46,
+  keys:{},
+  world:{w:1800,h:1400},
+  openPopup:null,
+};
+
+function resize(){
+  canvas.width=window.innerWidth;
+  canvas.height=window.innerHeight;
+}
+window.addEventListener('resize',resize); resize();
+
+function updateClock(){
+  const d=new Date();
+  const p=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+}
+setInterval(updateClock,1000); updateClock();
+
+const DLGS=[
+  '<span class="sys-tag">[SYS]</span> Map Expanded. Menginisiasi Dynamic Camera...',
+  '<span class="sys-tag">[SYS]</span> Aksara Knowledge Tree: <span id="dlg-s">'+G.shards+'</span>/46 data shards recovered.',
+  '<span class="npc-tag">[GUARDIAN]</span> "Pelajari aksara leluhur. Pohon ini menunggu penerusnya."',
+  '<span class="sys-tag">[SYS]</span> Pura Gksara Node — ancient AI records detected.',
+  '<span class="npc-tag">[GUARDIAN]</span> "Setiap shard menyimpan satu aksara yang terlupakan."',
+  '<span class="sys-tag">[SYS]</span> Digital root network active. Data flowing through 9 pathways.',
+  '<span class="npc-tag">[GUARDIAN]</span> "Kamu terasa familiar... apakah kamu keturunan Sang Aksara?"',
+  '<span class="sys-tag">[SYS]</span> Aksara Kingdom — Level 1 zone. Recommended Level: 1-5.',
+];
+let dlgIdx=0;
+function cycleDlg(){dlgIdx=(dlgIdx+1)%DLGS.length; setDlg(DLGS[dlgIdx]);}
+setInterval(cycleDlg,4500);
+function setDlg(h){document.getElementById('dialogue-text').innerHTML=h+'<span class="cursor"></span>';}
+
+function showNotif(msg,col){
+  const n=document.getElementById('notif');
+  n.textContent=msg; n.style.color=col||'var(--green)'; n.style.borderColor=col||'var(--green)';
+  n.style.opacity='1'; clearTimeout(n._t); n._t=setTimeout(()=>n.style.opacity='0',2500);
+}
+
+// World definition
+const TREES=[
+  {x:220,y:280},{x:310,y:350},{x:170,y:420},{x:140,y:520},
+  {x:500,y:550},{x:350,y:600},{x:240,y:660},{x:420,y:180},
+  {x:550,y:160},{x:1100,y:300},{x:1200,y:450},{x:900,y:600},
+  {x:1300,y:200},{x:800,y:250},{x:1000,y:700},{x:1400,y:500},
+  {x:680,y:700},{x:750,y:150},{x:450,y:750},{x:1250,y:650},
+  {x:100,y:700},{x:1500,y:350},{x:600,y:800},{x:1350,y:750},
+  {x:200,y:900},{x:900,y:900},{x:1100,y:900},{x:700,y:1000},
+];
+const DATA_TREE={x:750,y:350};
+const NPCS=[{x:450,y:500,name:'AKSARA GUARDIAN'}];
+const SHARDS=[
+  {x:400,y:280},{x:600,y:380},{x:850,y:280},{x:280,y:500},
+  {x:950,y:450},{x:640,y:520},{x:1050,y:280},{x:380,y:660},
+  {x:820,y:600},{x:1200,y:350},{x:540,y:720},{x:1100,y:550},
+  {x:300,y:780},{x:750,y:780},{x:1300,y:450},{x:480,y:900},
+  {x:1050,y:750},{x:200,y:600},{x:900,y:200},
+].map(s=>({...s,collected:false}));
+const RUINS=[{x:200,y:500}];
+
+const CIRCUIT_PATHS=[
+  [{x:750,y:420},{x:700,y:480},{x:620,y:520},{x:500,y:550}],
+  [{x:750,y:420},{x:810,y:480},{x:870,y:540},{x:920,y:600}],
+  [{x:750,y:420},{x:680,y:450},{x:600,y:460},{x:520,y:470}],
+  [{x:750,y:420},{x:820,y:440},{x:880,y:420},{x:940,y:400}],
+  [{x:750,y:420},{x:730,y:500},{x:700,y:580},{x:660,y:660}],
+  [{x:750,y:420},{x:780,y:320},{x:820,y:240},{x:860,y:180}],
+  [{x:750,y:420},{x:660,y:380},{x:580,y:340},{x:500,y:290}],
+  [{x:750,y:420},{x:750,y:520},{x:750,y:620},{x:750,y:700}],
+];
+
+function spawnParticle(wx,wy){
+  G.particles.push({x:wx,y:wy,vx:(Math.random()-.5)*0.5,vy:-0.6-Math.random()*1.2,life:1,maxLife:1.5+Math.random()*2,r:Math.random()>0.5?2:1.5,c:Math.random()>0.5?'#00ffaa':'#00ccff'});
+}
+setInterval(()=>{for(let i=0;i<3;i++) spawnParticle(DATA_TREE.x+(Math.random()-.5)*70,DATA_TREE.y+(Math.random()-.5)*70);},180);
+
+function wx(x){return x-G.camera.x;}
+function wy(y){return y-G.camera.y;}
+
+function updateCamera(){
+  const pw=canvas.width,ph=canvas.height;
+  G.camera.x+=(G.player.x-pw/2-G.camera.x)*0.08;
+  G.camera.y+=(G.player.y-ph/2-G.camera.y)*0.08;
+  G.camera.x=Math.max(0,Math.min(G.world.w-pw,G.camera.x));
+  G.camera.y=Math.max(0,Math.min(G.world.h-ph,G.camera.y));
+}
+
+const TILE=40;
+function drawTiles(){
+  const offX=Math.floor(G.camera.x/TILE)*TILE;
+  const offY=Math.floor(G.camera.y/TILE)*TILE;
+  const cols=Math.ceil(canvas.width/TILE)+2;
+  const rows=Math.ceil(canvas.height/TILE)+2;
+  ctx.strokeStyle='rgba(26,255,110,0.04)'; ctx.lineWidth=1;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const sx=(offX+c*TILE)-G.camera.x;
+      const sy=(offY+r*TILE)-G.camera.y;
+      const n=((((offX+c*TILE)/TILE|0)*7)+(((offY+r*TILE)/TILE|0)*13))%30;
+      ctx.fillStyle=n<2?'rgba(20,50,20,0.4)':n<5?'rgba(15,35,15,0.3)':'rgba(6,18,6,0.2)';
+      ctx.fillRect(sx,sy,TILE,TILE);
+      ctx.strokeRect(sx,sy,TILE,TILE);
+    }
+  }
+}
+
+function drawCircuits(t){
+  CIRCUIT_PATHS.forEach((path,pi)=>{
+    const phase=(t*0.5+pi*0.8)%(path.length-1);
+    ctx.beginPath();
+    ctx.moveTo(wx(path[0].x),wy(path[0].y));
+    for(let i=1;i<path.length;i++){
+      const prev=path[i-1],curr=path[i];
+      ctx.lineTo(wx(curr.x),wy(prev.y));
+      ctx.lineTo(wx(curr.x),wy(curr.y));
+    }
+    ctx.strokeStyle='rgba(26,255,110,0.2)'; ctx.lineWidth=1; ctx.stroke();
+    const seg=Math.floor(phase); const frac=phase-seg;
+    if(seg<path.length-1){
+      const a=path[seg],b=path[seg+1];
+      const px=a.x+(b.x-a.x)*frac, py=a.y+(b.y-a.y)*frac;
+      ctx.beginPath(); ctx.arc(wx(px),wy(py),3,0,Math.PI*2);
+      ctx.fillStyle='rgba(26,255,110,0.9)'; ctx.fill();
+    }
+    path.forEach((pt,i)=>{
+      if(i===0) return;
+      ctx.beginPath(); ctx.arc(wx(pt.x),wy(pt.y),2.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,200,255,0.6)'; ctx.fill();
+    });
+  });
+}
+
+function drawPixelTree(sx,sy,s){
+  s=s||1;
+  const colors=['#0d2a10','#0f3318','#133d1e'];
+  [[14*s,4*s],[18*s,12*s],[22*s,20*s]].forEach(([rx,ry],i)=>{
+    ctx.fillStyle=colors[i];
+    ctx.beginPath(); ctx.moveTo(sx,sy-24*s+i*8*s); ctx.lineTo(sx-rx,sy-ry+i*8*s+8*s); ctx.lineTo(sx+rx,sy-ry+i*8*s+8*s); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(26,255,110,0.15)'; ctx.lineWidth=0.5; ctx.stroke();
+  });
+  ctx.fillStyle='#2a1a08'; ctx.fillRect(sx-3*s,sy+20*s,6*s,10*s);
+}
+
+function drawDataTree(t){
+  const cx=wx(DATA_TREE.x),cy=wy(DATA_TREE.y);
+  const pulse=Math.sin(t*1.5)*0.1+0.9;
+  // Aura
+  const gr=ctx.createRadialGradient(cx,cy,10,cx,cy,130);
+  gr.addColorStop(0,'rgba(26,255,110,0.08)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.ellipse(cx,cy,130*pulse,100*pulse,0,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+  // Canopy
+  [[90,80,'#0d2a12'],[72,62,'#0f3318'],[52,48,'#133d1e'],[36,34,'#174824']].forEach(([rx,ry,col],i)=>{
+    const g=i===3?Math.sin(t*2+i)*0.06+0.94:1;
+    ctx.beginPath(); ctx.ellipse(cx,cy-20+i*8,rx*g,ry*g,0,0,Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.strokeStyle='rgba(26,255,110,0.18)'; ctx.lineWidth=1; ctx.stroke();
+  });
+  // Sub-blobs
+  [[-35,-10,28,22],[-12,-32,22,20],[32,-14,26,20],[10,-36,18,16]].forEach(([dx,dy,rx,ry])=>{
+    ctx.beginPath(); ctx.ellipse(cx+dx,cy+dy,rx,ry,0,0,Math.PI*2);
+    ctx.fillStyle='#0f3318'; ctx.fill();
+  });
+  // Edge glows
+  for(let i=0;i<8;i++){
+    const a=t*0.4+i*Math.PI/4;
+    ctx.beginPath(); ctx.arc(cx+Math.cos(a)*85,cy-20+Math.sin(a)*70,2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(26,255,110,${Math.sin(t*2+i)*0.25+0.5})`; ctx.fill();
+  }
+  // Trunk
+  ctx.fillStyle='#1e1008';
+  ctx.beginPath(); ctx.roundRect(cx-22,cy+55,44,90,4); ctx.fill();
+  ctx.strokeStyle='#2a1a08'; ctx.lineWidth=0.5; ctx.stroke();
+  // Server racks
+  [[cx-17,cy+62],[cx+3,cy+62]].forEach(([rx,ry])=>{
+    ctx.fillStyle='#161600'; ctx.fillRect(rx,ry,13,58);
+    ctx.strokeStyle='rgba(50,50,20,0.6)'; ctx.lineWidth=0.5; ctx.strokeRect(rx,ry,13,58);
+    for(let i=0;i<7;i++){
+      ctx.fillStyle=Math.sin(t*3+i*0.9+rx)>0?((i%2===0)?'#00ff88':'#00ccff'):'#111100';
+      ctx.fillRect(rx+2,ry+4+i*8,9,4);
+    }
+  });
+  // Interaction label
+  if(G.treeNear){
+    ctx.fillStyle='rgba(0,14,5,0.9)';
+    ctx.fillRect(cx-55,cy-160,110,36);
+    ctx.strokeStyle=`rgba(26,255,110,${Math.sin(t*5)*0.4+0.6})`; ctx.lineWidth=1; ctx.strokeRect(cx-55,cy-160,110,36);
+    ctx.fillStyle='#1aff6e'; ctx.font='bold 10px Orbitron'; ctx.textAlign='center';
+    ctx.fillText('[E] ENTER PURA',cx,cy-144);
+    ctx.fillStyle='#00ccff'; ctx.font='8px "Share Tech Mono"';
+    ctx.fillText('AKSARAH GKSARA KNOWLEDGE',cx,cy-131);
+    ctx.textAlign='left';
+  }
+}
+
+function drawNPC(npc,t){
+  const sx=wx(npc.x),sy=wy(npc.y);
+  // Ring
+  const rs=1+Math.sin(t*2)*0.08;
+  ctx.beginPath(); ctx.arc(sx,sy+10,28*rs,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(26,255,110,${0.5+Math.sin(t*2)*0.3})`; ctx.lineWidth=1.5; ctx.stroke();
+  // Hat
+  ctx.fillStyle='#f0f0f0'; ctx.fillRect(sx-9,sy-28,18,10);
+  ctx.fillStyle='#e0e0e0'; ctx.fillRect(sx-7,sy-34,14,8);
+  ctx.strokeStyle='#bbb'; ctx.lineWidth=0.5; ctx.strokeRect(sx-9,sy-28,18,10);
+  // Head
+  ctx.fillStyle='#d4a574'; ctx.fillRect(sx-7,sy-18,14,13);
+  ctx.strokeStyle='#8a6040'; ctx.lineWidth=0.5; ctx.strokeRect(sx-7,sy-18,14,13);
+  ctx.fillStyle='#333'; ctx.fillRect(sx-4,sy-15,3,3); ctx.fillRect(sx+1,sy-15,3,3);
+  // Body
+  ctx.fillStyle='#cc3322'; ctx.fillRect(sx-9,sy-5,18,16);
+  ctx.fillStyle='#fff'; ctx.fillRect(sx-5,sy-4,10,14);
+  // Legs
+  ctx.fillStyle='#224488'; ctx.fillRect(sx-8,sy+11,7,10); ctx.fillRect(sx+1,sy+11,7,10);
+  ctx.fillStyle='#111'; ctx.fillRect(sx-9,sy+20,9,4); ctx.fillRect(sx+0,sy+20,9,4);
+  // Label
+  const lbl=G.npcNear?'[E] TALK':'AKSARAN GUARDIAN';
+  const lw=G.npcNear?56:70;
+  ctx.fillStyle='rgba(0,10,3,0.9)'; ctx.fillRect(sx-lw/2,sy-50,lw,14);
+  if(G.npcNear){ctx.strokeStyle='#1aff6e'; ctx.lineWidth=0.8; ctx.strokeRect(sx-lw/2,sy-50,lw,14);}
+  ctx.fillStyle=G.npcNear?'#1aff6e':'#1aff6e'; ctx.font='8px "Share Tech Mono"'; ctx.textAlign='center';
+  ctx.fillText(lbl,sx,sy-39); ctx.textAlign='left';
+}
+
+function drawShards(t){
+  SHARDS.forEach(sh=>{
+    if(sh.collected) return;
+    const sx=wx(sh.x),sy=wy(sh.y);
+    const bob=Math.sin(t*3+sh.x*0.05)*4;
+    const alpha=0.7+Math.sin(t*4)*0.25;
+    ctx.save(); ctx.translate(sx,sy+bob); ctx.rotate(Math.PI/4+t*0.6);
+    ctx.fillStyle=`rgba(0,200,255,${alpha})`; ctx.fillRect(-5,-5,10,10);
+    ctx.strokeStyle=`rgba(0,255,255,${alpha})`; ctx.lineWidth=1; ctx.strokeRect(-5,-5,10,10);
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(sx,sy+bob,10,0,Math.PI*2);
+    ctx.fillStyle='rgba(0,200,255,0.08)'; ctx.fill();
+  });
+}
+
+function drawRuins(){
+  RUINS.forEach(ru=>{
+    const sx=wx(ru.x),sy=wy(ru.y);
+    ctx.fillStyle='#1a1a08'; ctx.fillRect(sx,sy,40,50);
+    ctx.strokeStyle='#2a2a10'; ctx.lineWidth=0.5; ctx.strokeRect(sx,sy,40,50);
+    [10,22,34].forEach(yy=>{ctx.fillStyle='#222210'; ctx.fillRect(sx+3,sy+yy,34,6);});
+    ctx.fillStyle='#151508'; ctx.fillRect(sx+48,sy+15,30,40); ctx.strokeRect(sx+48,sy+15,30,40);
+    const crys=[{dx:-5,dy:0,c:'#00aaff'},{dx:8,dy:-4,c:'#00ffaa'},{dx:18,dy:2,c:'#0066ff'},{dx:-10,dy:4,c:'#00ccff'},{dx:28,dy:-2,c:'#00aaff'}];
+    crys.forEach(({dx,dy,c},i)=>{
+      ctx.beginPath(); ctx.moveTo(sx+dx+4,sy+50+dy-10); ctx.lineTo(sx+dx,sy+50+dy+2); ctx.lineTo(sx+dx+8,sy+50+dy+2); ctx.closePath();
+      ctx.fillStyle=c; ctx.fill(); ctx.strokeStyle=c; ctx.lineWidth=0.5; ctx.stroke();
+    });
+  });
+}
+
+function drawPlayer(){
+  const t=G.time;
+  const sx=wx(G.player.x),sy=wy(G.player.y);
+  const mv=G.player.dx!==0||G.player.dy!==0;
+  const leg=mv?Math.sin(t*8)*3:0;
+  // Shadow
+  ctx.beginPath(); ctx.ellipse(sx,sy+24,10,4,0,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fill();
+  // Legs
+  ctx.fillStyle='#224488';
+  ctx.fillRect(sx-6,sy+12,6,10+leg); ctx.fillRect(sx+0,sy+12,6,10-leg);
+  ctx.fillStyle='#111';
+  ctx.fillRect(sx-7,sy+22+leg,8,4); ctx.fillRect(sx-1,sy+22-leg,8,4);
+  // Body
+  ctx.fillStyle='#336633'; ctx.fillRect(sx-7,sy-2,14,14);
+  ctx.fillStyle='#553322'; ctx.fillRect(sx+7,sy-1,5,10);
+  // Head
+  ctx.fillStyle='#d4a574'; ctx.fillRect(sx-5,sy-14,10,12);
+  ctx.strokeStyle='#8a6040'; ctx.lineWidth=0.5; ctx.strokeRect(sx-5,sy-14,10,12);
+  ctx.fillStyle='#333'; ctx.fillRect(sx-3,sy-12,2,2); ctx.fillRect(sx+1,sy-12,2,2);
+  ctx.fillStyle='#3a2a10'; ctx.fillRect(sx-6,sy-17,12,5);
+  // Indicator
+  ctx.beginPath(); ctx.arc(sx,sy-20,2.5,0,Math.PI*2);
+  ctx.fillStyle='rgba(26,255,110,0.8)'; ctx.fill();
+}
+
+function updateDrawParticles(){
+  G.particles=G.particles.filter(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.life-=0.007;
+    if(p.life<=0) return false;
+    const a=p.life/p.maxLife*0.8;
+    ctx.beginPath(); ctx.arc(wx(p.x),wy(p.y),p.r,0,Math.PI*2);
+    ctx.fillStyle=p.c; ctx.globalAlpha=a; ctx.fill(); ctx.globalAlpha=1;
+    return true;
+  });
+}
+
+function checkProximity(){
+  const npc=NPCS[0];
+  const d1=Math.hypot(G.player.x-npc.x,G.player.y-npc.y);
+  G.npcNear=d1<65;
+  const d2=Math.hypot(G.player.x-DATA_TREE.x,G.player.y-DATA_TREE.y);
+  G.treeNear=d2<140;
+  document.getElementById('near-badge').style.display=(G.npcNear||G.treeNear)?'inline-block':'none';
+  // Shards
+  SHARDS.forEach(sh=>{
+    if(sh.collected) return;
+    if(Math.hypot(G.player.x-sh.x,G.player.y-sh.y)<22){
+      sh.collected=true; G.shards++;
+      G.player.xp+=80; G.player.gold+=5;
+      updateUI();
+      showNotif('AKSARA SHARD +1 — '+G.shards+'/'+G.totalShards,G.shards===G.totalShards?'#ffaa00':'#1aff6e');
+      setDlg('<span class="sys-tag">[SYS]</span> Shard absorbed. Aksara fragments: '+G.shards+'/'+G.totalShards+'. XP +80.');
+      if(G.player.xp>=G.player.maxXp) levelUp();
+    }
+  });
+}
+
+function levelUp(){
+  G.player.xp-=G.player.maxXp; G.player.maxXp=Math.round(G.player.maxXp*1.5);
+  G.player.level++; G.player.maxHp+=20; G.player.hp=G.player.maxHp;
+  G.player.maxMp+=10; G.player.mp=G.player.maxMp;
+  document.getElementById('lvup-sub').textContent='Kamu mencapai Level '+G.player.level+' — Aksara '+(G.player.level<=2?'Adept':G.player.level<=3?'Scholar':'Master');
+  document.getElementById('level-up').style.display='block';
+  updateUI();
+}
+function closeLevelUp(){document.getElementById('level-up').style.display='none'; showNotif('LEVEL '+G.player.level+' ACHIEVED!');}
+
+function updateUI(){
+  const hp=Math.round(G.player.hp/G.player.maxHp*100);
+  const mp=Math.round(G.player.mp/G.player.maxMp*100);
+  const xp=Math.round(G.player.xp/G.player.maxXp*100);
+  const sh=Math.round(G.shards/G.totalShards*100);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.style.width=v+'%';};
+  set('hp-bar',hp); set('hp-mini',hp); set('mp-bar',mp); set('mp-mini',mp);
+  set('xp-bar',xp); set('shard-fill',sh);
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  sv('hp-val',G.player.hp+'/'+G.player.maxHp); sv('hp-top',G.player.hp+'/'+G.player.maxHp);
+  sv('mp-val',G.player.mp+'/'+G.player.maxMp); sv('mp-top',G.player.mp+'/'+G.player.maxMp);
+  sv('xp-val',G.player.xp+'/'+G.player.maxXp);
+  sv('shard-v',G.shards+'/'+G.totalShards);
+  sv('steps-v',Math.round(G.player.steps));
+  sv('gold-v','◆'+G.player.gold);
+  sv('lv-display',G.player.level); sv('tab-lv',G.player.level);
+  sv('tab-gold',G.player.gold); sv('tab-shards',G.shards);
+  sv('i-lv',G.player.level); sv('i-shards',G.shards+'/'+G.totalShards);
+  sv('i-gold','◆'+G.player.gold); sv('i-steps',Math.round(G.player.steps));
+  sv('i-talks',G.player.talks); sv('q-shards',G.shards);
+  if(G.shards===G.totalShards){
+    const e=document.getElementById('q2'); if(e){e.textContent='✓'; e.className='q-check';}
+  }
+}
+
+// Input
+document.addEventListener('keydown',e=>{
+  G.keys[e.key]=true;
+  if(e.key==='e'||e.key==='E'){
+    if(G.npcNear) togglePopup('talk');
+    else if(G.treeNear) doEnter();
+  }
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup',e=>{G.keys[e.key]=false;});
+
+function holdDir(dir,on){
+  const map={u:'ArrowUp',d:'ArrowDown',l:'ArrowLeft',r:'ArrowRight'};
+  G.keys[map[dir]]=on;
+}
+['u','d','l','r'].forEach(dir=>{
+  const el=document.getElementById('dp-'+dir);
+  ['mousedown','touchstart'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault&&e.preventDefault(); holdDir(dir,true);}));
+  ['mouseup','mouseleave','touchend'].forEach(ev=>el.addEventListener(ev,()=>holdDir(dir,false)));
+});
+
+function updatePlayer(){
+  let dx=0,dy=0;
+  if(G.keys['ArrowUp']||G.keys['w']||G.keys['W']) dy=-1;
+  if(G.keys['ArrowDown']||G.keys['s']||G.keys['S']) dy=1;
+  if(G.keys['ArrowLeft']||G.keys['a']||G.keys['A']) dx=-1;
+  if(G.keys['ArrowRight']||G.keys['d']||G.keys['D']) dx=1;
+  if(dx&&dy){dx*=0.707;dy*=0.707;}
+  G.player.dx=dx; G.player.dy=dy;
+  G.player.x+=dx*G.player.speed; G.player.y+=dy*G.player.speed;
+  G.player.x=Math.max(20,Math.min(G.world.w-20,G.player.x));
+  G.player.y=Math.max(20,Math.min(G.world.h-20,G.player.y));
+  if(dx||dy) G.player.steps+=G.player.speed;
+  if(G.player.mp<G.player.maxMp&&Math.random()<0.003){G.player.mp=Math.min(G.player.maxMp,G.player.mp+1);updateUI();}
+}
+
+// Popups
+function closeAll(){
+  ['info-popup','quest-popup','talk-popup'].forEach(id=>document.getElementById(id).style.display='none');
+  ['btn-info','btn-quest','btn-talk'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('pressed');});
+  G.openPopup=null;
+}
+function togglePopup(name){
+  if(G.openPopup===name){closeAll();return;}
+  closeAll();
+  const m={info:'info-popup',quest:'quest-popup',talk:'talk-popup'};
+  const b={info:'btn-info',quest:'btn-quest',talk:'btn-talk'};
+  document.getElementById(m[name]).style.display='block';
+  const be=document.getElementById(b[name]); if(be) be.classList.add('pressed');
+  G.openPopup=name;
+  if(name==='talk'){G.player.talks++;updateUI();setDlg('<span class="npc-tag">[GUARDIAN]</span> "Selamat datang, pengelana nusantara."');}
+}
+function doEnter(){
+  if(!G.player.entered){G.player.entered=true;const e=document.getElementById('q3');if(e){e.textContent='✓';e.className='q-check';}}
+  setDlg('<span class="sys-tag">[SYS]</span> Entering Pura Gksara Knowledge Node... Decoding ancient Aksara...');
+  showNotif('ENTERING PURA GKSARA — KNOWLEDGE NODE ACTIVATED','#ffa500');
+}
+function switchTab(el,name){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');setDlg('<span class="sys-tag">[SYS]</span> Switching zone: '+name);}
+
+const TALK_RESP=[
+  '"Aksara Kingdom adalah realm digital di mana huruf-huruf Nusantara kuno hidup sebagai data. Sistem AI purba menyandikan setiap aksara menjadi energi informasi yang mengalir melalui pohon data ini."',
+  '"Data shard tersebar di seluruh zona Nusantara Digital. Kamu dapat menemukannya dengan menjelajahi area — carilah berlian berwarna biru yang berputar. Setiap shard memberikanmu 80 XP."',
+  '"Pohon Data adalah jantung dari Aksara Kingdom — ia tumbuh dari server purba yang terinfeksi akar organik. Pohon ini menyimpan seluruh perpustakaan aksara leluhur dalam format digital yang menanti untuk dibaca kembali."',
+];
+function talkChoice(i){document.getElementById('talk-body').textContent=TALK_RESP[i];setDlg('<span class="npc-tag">[GUARDIAN]</span> Berbicara dengan Aksara Guardian...');}
+function talkClose(){closeAll();setDlg('<span class="npc-tag">[GUARDIAN]</span> "Sampai jumpa, pengelana. Semoga aksara selalu membimbingmu."');}
+
+// Ground patches
+function drawGround(){
+  [{x:200,y:250,w:600,h:350,a:0.3},{x:350,y:400,w:500,h:250,a:0.2},{x:100,y:500,w:200,h:150,a:0.2},{x:800,y:200,w:400,h:300,a:0.25},{x:1000,y:500,w:350,h:250,a:0.2}].forEach(p=>{
+    ctx.fillStyle=`rgba(18,40,18,${p.a})`;
+    ctx.beginPath(); ctx.roundRect(wx(p.x),wy(p.y),p.w,p.h,8); ctx.fill();
+  });
+}
+
+function loop(ts){
+  G.time=ts/1000;
+  const t=G.time;
+  updatePlayer(); updateCamera(); checkProximity(); updateUI();
+
+  ctx.fillStyle='#040c04'; ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  drawTiles(); drawGround(); drawCircuits(t);
+  TREES.forEach(tr=>drawPixelTree(wx(tr.x),wy(tr.y),0.8+Math.sin(tr.x*0.3)*0.15));
+  drawRuins(); drawDataTree(t); drawShards(t);
+  NPCS.forEach(n=>drawNPC(n,t));
+  drawPlayer(); updateDrawParticles();
+
+  requestAnimationFrame(loop);
+}
+
+G.player.x=450; G.player.y=600;
+requestAnimationFrame(loop);
+setTimeout(()=>showNotif('WASD / ARROWS TO MOVE  —  E TO INTERACT'),800);
+setTimeout(()=>setDlg('<span class="npc-tag">[GUARDIAN]</span> "Kamu harus mengumpulkan 19 shard lagi untuk memulihkan Pohon Data."'),5000);
+</script>
+
+  <!-- Larangan Klik Kanan  -->
+  <script>
+    document.onkeydown = function(e) {
+      // Mematikan F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+H, Ctrl+A, Ctrl+F
+      if (
+        event.keyCode == 123 || 
+        (e.ctrlKey && (e.keyCode == 'U'.charCodeAt(0) || e.keyCode == 'S'.charCodeAt(0) || 
+        e.keyCode == 'A'.charCodeAt(0) || e.keyCode == 'F'.charCodeAt(0) || e.keyCode == 'E'.charCodeAt(0))) ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0)))
+      ) {
+        return false;
+      }
+    };
+  
+    // Mematikan Klik Kanan tanpa pesan alert
+    document.oncontextmenu = function(e) {
+      return false;
+    };
+  
+    // Tambahan: Mematikan Drag/Seleksi Teks (Opsional tapi sering dipakai bersama)
+    document.onselectstart = function() {
+      return false;
+    };
+  </script>
+  
+</body>
+</html>

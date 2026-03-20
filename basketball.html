@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Basketball Robot — CV Strategy Engine · ABU Robocon</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Press+Start+2P&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#020905;--bg2:#050f08;--panel:#060d08;
+  --border:#0a2912;--border-hi:#155a28;
+  --green:#00ff41;--green-dim:#00a82b;--green-dark:#003d10;
+  --amber:#ffb300;--amber-dim:#a07000;
+  --cyan:#00e5ff;--cyan-dim:#007a8c;
+  --red:#ff4040;--purple:#c084fc;
+  --text:#a8ffb0;--text-dim:#3d8048;--text-bright:#e0ffe5;
+  --font-mono:'Share Tech Mono','Courier New',monospace;
+  --font-vt:'VT323',monospace;
+  --font-pixel:'Press Start 2P',monospace;
+  --glow-g:0 0 8px rgba(0,255,65,.7),0 0 24px rgba(0,255,65,.3);
+  --glow-a:0 0 8px rgba(255,179,0,.7),0 0 24px rgba(255,179,0,.3);
+  --glow-c:0 0 8px rgba(0,229,255,.6),0 0 20px rgba(0,229,255,.2);
+  --glow-r:0 0 8px rgba(255,64,64,.7),0 0 24px rgba(255,64,64,.3);
+  --glow-p:0 0 8px rgba(192,132,252,.6),0 0 20px rgba(192,132,252,.2);
+  --nav-h:48px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:14px;line-height:1.6;min-height:100vh;overflow-x:hidden;cursor:none}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 4px);pointer-events:none;z-index:9998}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.7) 100%);pointer-events:none;z-index:9997}
+a{color:inherit;text-decoration:none}ul{list-style:none}button{cursor:none;font-family:inherit}
+::selection{background:var(--green);color:var(--bg)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--green-dark)}::-webkit-scrollbar-thumb:hover{background:var(--green-dim)}
+
+#cd{position:fixed;width:10px;height:10px;background:var(--green);clip-path:polygon(50% 0%,0% 100%,50% 78%,100% 100%);transform:translate(-50%,-50%);pointer-events:none;z-index:99999;filter:drop-shadow(0 0 3px var(--green));transition:transform .05s}
+#cr{position:fixed;width:22px;height:22px;border:1px solid rgba(0,255,65,.4);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:left .09s ease,top .09s ease}
+
+#nav{position:fixed;top:0;left:0;right:0;height:var(--nav-h);background:rgba(2,9,5,.95);border-bottom:1px solid var(--border-hi);display:flex;align-items:center;padding:0 2rem;gap:1.5rem;z-index:1000;backdrop-filter:blur(6px)}
+.n-logo{font-family:var(--font-pixel);font-size:.5rem;color:var(--green);text-shadow:var(--glow-g);letter-spacing:.06em;flex-shrink:0}
+.n-logo span{color:var(--amber)}
+.n-links{display:flex;gap:.2rem;flex:1;justify-content:center}
+.n-link{font-size:.78rem;color:var(--text-dim);padding:.25rem .6rem;border:1px solid transparent;transition:all .2s;white-space:nowrap}
+.n-link:hover,.n-link.active{color:var(--green);border-color:var(--border-hi);background:rgba(0,255,65,.04)}
+.n-status{display:flex;align-items:center;gap:.4rem;font-size:.67rem;color:var(--text-dim)}
+.n-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 2s ease-in-out infinite;box-shadow:0 0 6px var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.pw{max-width:1240px;margin:0 auto;padding:calc(var(--nav-h) + 2.5rem) 2rem 5rem;position:relative;z-index:1}
+.rev{opacity:0;transform:translateY(18px);transition:opacity .55s,transform .55s}
+.rev.vis{opacity:1;transform:none}
+
+.kicker{font-size:.68rem;color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;margin-bottom:.5rem}
+.kicker span{color:var(--green)}
+.htitle{font-family:var(--font-vt);font-size:clamp(2.8rem,7vw,5.5rem);color:var(--green);text-shadow:var(--glow-g);line-height:.95;margin-bottom:.4rem}
+.htitle span{color:var(--amber);text-shadow:var(--glow-a)}
+.hsub{font-size:.88rem;color:var(--text);max-width:700px;line-height:1.9;margin-bottom:1.2rem}
+.hmeta{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.8rem}
+.tag{font-size:.64rem;padding:.15rem .5rem;border:1px solid var(--border-hi);color:var(--text-dim);text-transform:uppercase}
+.tag-g{border-color:rgba(0,255,65,.4);color:var(--green)}.tag-a{border-color:rgba(255,179,0,.4);color:var(--amber)}
+.tag-c{border-color:rgba(0,229,255,.4);color:var(--cyan)}.tag-r{border-color:rgba(255,64,64,.4);color:var(--red)}
+.tag-p{border-color:rgba(192,132,252,.4);color:var(--purple)}
+.evb{display:inline-flex;align-items:center;gap:.5rem;font-size:.68rem;border:1px solid rgba(255,179,0,.35);padding:.2rem .7rem;text-transform:uppercase}
+.evb.amber{color:var(--amber)}.evb.amber .d{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.evb.red{color:var(--red);border-color:rgba(255,64,64,.35)}.evb.red .d{background:var(--red);box-shadow:0 0 6px var(--red)}
+.d{width:6px;height:6px;border-radius:50%;animation:blink 1.4s ease-in-out infinite}
+
+.ss{background:var(--panel);border:1px solid var(--border-hi);margin-bottom:1.5rem}
+.ss-inner{display:grid;grid-template-columns:repeat(6,1fr)}
+.si{padding:.75rem .8rem;text-align:center;border-right:1px solid var(--border)}
+.si:last-child{border-right:none}
+.sn{font-family:var(--font-vt);font-size:clamp(1.3rem,2.2vw,2.1rem);line-height:1}
+.sn.g{color:var(--green);text-shadow:var(--glow-g)}.sn.a{color:var(--amber);text-shadow:var(--glow-a)}
+.sn.c{color:var(--cyan);text-shadow:var(--glow-c)}.sn.r{color:var(--red);text-shadow:var(--glow-r)}
+.sn.p{color:var(--purple);text-shadow:var(--glow-p)}
+.sl{font-size:.57rem;color:var(--text-dim);margin-top:.1rem;letter-spacing:1px;text-transform:uppercase}
+
+.sh{display:flex;align-items:center;gap:.6rem;font-size:.8rem;margin:2.5rem 0 1.1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+.shp{color:var(--green)}.shc{color:var(--text-bright)}.sha{color:var(--text-dim)}
+
+.tc{background:var(--panel);border:1px solid var(--border-hi);transition:border-color .2s}
+.tc:hover{border-color:rgba(0,255,65,.3)}
+.tch{display:flex;align-items:center;gap:.5rem;padding:.42rem 1rem;border-bottom:1px solid var(--border);font-size:.67rem;color:var(--text-dim);background:rgba(0,255,65,.02);letter-spacing:1px;text-transform:uppercase}
+.tcd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.tcb{padding:1rem 1.2rem}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:1.2rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.2rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.2rem}
+.gap-b{margin-bottom:1.2rem}
+
+.kv{display:flex;gap:.6rem;padding:.38rem 0;border-bottom:1px dotted var(--border);font-size:.79rem}
+.kv:last-child{border-bottom:none}
+.kk{color:var(--text-dim);min-width:155px;flex-shrink:0}.kv-val{color:var(--text-bright)}
+.mv-g{font-family:var(--font-vt);color:var(--green)}.mv-a{font-family:var(--font-vt);color:var(--amber)}
+.mv-c{font-family:var(--font-vt);color:var(--cyan)}.mv-r{font-family:var(--font-vt);color:var(--red)}
+.mv-p{font-family:var(--font-vt);color:var(--purple)}
+
+.cc{background:var(--panel);border:1px solid var(--border-hi)}
+.cch{display:flex;align-items:center;gap:.5rem;padding:.42rem 1rem;border-bottom:1px solid var(--border);font-size:.67rem;color:var(--text-dim);background:rgba(0,255,65,.02);letter-spacing:1px;text-transform:uppercase}
+.ccd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ccb{padding:.8rem;position:relative}
+.ch240{height:240px}.ch280{height:280px}.ch300{height:300px}
+
+.field-wrap{background:var(--panel);border:1px solid var(--border-hi)}
+.field-header{display:flex;align-items:center;justify-content:space-between;padding:.42rem 1rem;border-bottom:1px solid var(--border);font-size:.67rem;color:var(--text-dim);background:rgba(0,255,65,.02);letter-spacing:1px;text-transform:uppercase}
+#field-canvas{display:block;width:100%}
+
+.cam-panel{background:var(--panel);border:1px solid var(--border-hi);position:relative;overflow:hidden}
+.cam-header{display:flex;align-items:center;justify-content:space-between;padding:.42rem 1rem;background:rgba(5,15,8,.98);border-bottom:1px solid var(--border-hi);font-size:.67rem;color:var(--text-dim)}
+.rdot{width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:.4rem}
+.rdot.live{background:var(--green);animation:blink 1s step-end infinite}
+#cv-canvas{display:block;width:100%}
+.cam-badge{position:absolute;bottom:.8rem;left:.8rem;background:rgba(2,9,5,.9);border:1px solid var(--border-hi);padding:.28rem .8rem;font-size:.7rem}
+
+.decision-display{padding:1rem 1.2rem;text-align:center}
+.dec-label{font-size:.6rem;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:.4rem}
+.dec-action{font-family:var(--font-vt);font-size:3.2rem;line-height:1;transition:all .35s;margin-bottom:.3rem}
+.dec-action.dribble{color:var(--cyan);text-shadow:var(--glow-c)}
+.dec-action.approach{color:var(--amber);text-shadow:var(--glow-a)}
+.dec-action.shoot{color:var(--green);text-shadow:var(--glow-g)}
+.dec-action.dunk{color:var(--purple);text-shadow:var(--glow-p)}
+.dec-action.defend{color:var(--red);text-shadow:var(--glow-r)}
+
+.gauge-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.gauge-item{background:var(--bg2);border:1px solid var(--border);padding:.7rem}
+.gauge-label{font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:.3rem}
+.gauge-val{font-family:var(--font-vt);font-size:1.6rem;line-height:1}
+.gauge-bar-wrap{height:4px;background:var(--border);border-radius:2px;margin-top:.4rem;overflow:hidden}
+.gauge-bar{height:100%;border-radius:2px;transition:width .5s ease}
+
+.angle-display{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem;padding:1rem 1.2rem}
+.ang-item{text-align:center}
+.ang-label{font-size:.6rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.3rem}
+.ang-val{font-family:var(--font-vt);font-size:1.8rem;line-height:1}
+
+.zone-card{background:var(--panel);border:1px solid var(--border-hi);padding:.9rem;position:relative;overflow:hidden;transition:all .3s;cursor:default}
+.zone-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:.7}
+.zone-card.active{transform:translateY(-3px)}
+.zone-card.z-dribble::before{background:var(--cyan)}
+.zone-card.z-dribble.active{border-color:var(--cyan);box-shadow:0 8px 28px rgba(0,229,255,.15)}
+.zone-card.z-approach::before{background:var(--amber)}
+.zone-card.z-approach.active{border-color:var(--amber);box-shadow:0 8px 28px rgba(255,179,0,.15)}
+.zone-card.z-shoot::before{background:var(--green)}
+.zone-card.z-shoot.active{border-color:var(--green);box-shadow:0 8px 28px rgba(0,255,65,.15)}
+.zone-card.z-dunk::before{background:var(--purple)}
+.zone-card.z-dunk.active{border-color:var(--purple);box-shadow:0 8px 28px rgba(192,132,252,.18)}
+.zc-icon{font-family:var(--font-vt);font-size:2.2rem;line-height:1;margin-bottom:.4rem}
+.zc-name{font-size:.78rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;margin-bottom:.2rem}
+.zc-range{font-size:.68rem;margin-bottom:.5rem}
+.zc-desc{font-size:.71rem;color:var(--text-dim);line-height:1.75}
+.zc-badge{display:inline-block;font-size:.58rem;padding:.1rem .4rem;border:1px solid;text-transform:uppercase;margin-top:.5rem}
+
+.term-log{background:var(--bg2);border:1px solid var(--border);padding:.6rem .9rem;height:170px;overflow-y:auto;font-size:.69rem;color:var(--text-dim)}
+.term-log::-webkit-scrollbar{width:3px}
+.term-log::-webkit-scrollbar-thumb{background:var(--green-dark)}
+.tl{margin:1px 0}
+.tl.g{color:var(--green)}.tl.a{color:var(--amber)}.tl.c{color:var(--cyan)}.tl.r{color:var(--red)}.tl.p{color:var(--purple)}
+
+.pipeline{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;padding:.4rem 0}
+.ps{flex:1;min-width:68px;text-align:center;padding:.6rem .35rem;border:1px solid var(--border-hi);background:rgba(0,255,65,.02);font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.3px;transition:all .2s;cursor:default}
+.ps:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,65,.05)}
+.ps .pi{font-family:var(--font-vt);font-size:1.15rem;color:var(--green);display:block;margin-bottom:.12rem}
+.ps.a .pi{color:var(--amber)}.ps.a:hover{border-color:var(--amber);color:var(--amber)}
+.ps.c .pi{color:var(--cyan)}.ps.c:hover{border-color:var(--cyan);color:var(--cyan)}
+.ps.r .pi{color:var(--red)}.ps.r:hover{border-color:var(--red);color:var(--red)}
+.ps.p .pi{color:var(--purple)}.ps.p:hover{border-color:var(--purple);color:var(--purple)}
+.pa{color:var(--text-dim);font-size:.85rem;flex-shrink:0}
+
+.mt{width:100%;border-collapse:collapse;font-size:.76rem}
+.mt th{text-align:left;color:var(--text-dim);font-size:.62rem;letter-spacing:1px;text-transform:uppercase;padding:.38rem .8rem;border-bottom:1px solid var(--border-hi)}
+.mt td{padding:.42rem .8rem;border-bottom:1px solid var(--border);color:var(--text)}
+.mt tr:hover td{background:rgba(0,255,65,.03)}
+
+.footer{border-top:1px solid var(--border-hi);padding:1.5rem 2rem;text-align:center;font-size:.7rem;color:var(--text-dim);margin-top:3rem}
+.footer a{color:var(--green)}
+
+@media(max-width:960px){.g3,.g4{grid-template-columns:1fr 1fr}.ss-inner{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.g2,.g3,.g4{grid-template-columns:1fr}.ss-inner{grid-template-columns:repeat(2,1fr)}.n-links{display:none}}
+</style>
+</head>
+<body>
+<div id="cd"></div><div id="cr"></div>
+
+<nav id="nav">
+  <a class="n-logo" href="index.html">AXION<span>.</span>SYS</a>
+  <ul class="n-links">
+    <li><a class="n-link" href="index.html">Home</a></li>
+    <li><a class="n-link" href="about.html">About</a></li>
+    <li><a class="n-link active" href="projects.html">Projects</a></li>
+    <li><a class="n-link" href="experience.html">Experience</a></li>
+    <li><a class="n-link" href="skills.html">Skills</a></li>
+    <li><a class="n-link" href="contact.html">Contact</a></li>
+    <li><a class="n-link" href="research.html">Research</a></li>
+    <li><a class="n-link" href="chat.html">AI_CHAT</a></li>
+  </ul>
+  <div class="n-status"><div class="n-dot"></div><span>STRATEGY ENGINE · LIVE</span></div>
+</nav>
+
+<div class="pw">
+
+  <!-- HERO -->
+  <div class="rev">
+    <div class="kicker"><span>◆</span>&nbsp;ABU Robocon · Basketball Robot · CV + Strategy Engine · 2025</div>
+    <h1 class="htitle">COMPUTER VISION<br><span>STRATEGY</span> ENGINE</h1>
+    <p class="hsub">
+      Full-stack vision pipeline untuk robot basket ABU Robocon —
+      <span style="color:var(--amber)">YOLOv8 3-class detection</span> (bola, hoop, robot lawan),
+      <span style="color:var(--cyan)">zone-based strategy engine</span> dengan keputusan dribble, approach, shoot,
+      dan <span style="color:var(--purple)">slam dunk</span> berdasarkan fusi IMU, depth estimation, dan pixel offset hoop.
+    </p>
+    <div class="hmeta">
+      <span class="evb amber"><span class="d"></span>ABU ROBOCON · MATCH MODE</span>
+      <span class="evb red" style="margin-left:.3rem"><span class="d"></span>OPPONENT DETECTED</span>
+      <span class="tag tag-a">YOLOv8 · 3-class</span>
+      <span class="tag tag-c">Zone Strategy Engine</span>
+      <span class="tag tag-g">Kalman · SORT Tracker</span>
+      <span class="tag tag-r">IMU Sensor Fusion</span>
+      <span class="tag tag-p">Slam Dunk Logic</span>
+      <span class="tag">ROS 2 Humble</span>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="ss rev" style="transition-delay:.05s">
+    <div class="ss-inner">
+      <div class="si"><div class="sn a">94.3%</div><div class="sl">Ball mAP@50</div></div>
+      <div class="si"><div class="sn g">91.7%</div><div class="sl">Hoop mAP@50</div></div>
+      <div class="si"><div class="sn r">88.5%</div><div class="sl">Opponent mAP@50</div></div>
+      <div class="si"><div class="sn c">28 fps</div><div class="sl">Inference</div></div>
+      <div class="si"><div class="sn g">4</div><div class="sl">Strategy Zones</div></div>
+      <div class="si"><div class="sn p">≤ 0.8m</div><div class="sl">Dunk Threshold</div></div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="sh rev" style="transition-delay:.07s">
+    <span class="shp">robot@strategy:~$</span>
+    <span class="shc">python main.py</span>
+    <span class="sha">--mode match --strategy full --ros-publish</span>
+  </div>
+  <div class="tc rev gap-b" style="transition-delay:.08s">
+    <div class="tch"><div class="tcd" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>FULL PIPELINE — PERCEPTION → DECISION → ACTUATION</div>
+    <div class="tcb">
+      <div class="pipeline">
+        <div class="ps"><span class="pi">📷</span>Camera<br>CSI</div><div class="pa">▶</div>
+        <div class="ps a"><span class="pi">⚙</span>Pre-<br>process</div><div class="pa">▶</div>
+        <div class="ps"><span class="pi">🎯</span>YOLO<br>3-class</div><div class="pa">▶</div>
+        <div class="ps c"><span class="pi">〄</span>Kalman<br>+SORT</div><div class="pa">▶</div>
+        <div class="ps r"><span class="pi">⚠</span>IMU<br>Fusion</div><div class="pa">▶</div>
+        <div class="ps a"><span class="pi">⊕</span>Zone<br>Classify</div><div class="pa">▶</div>
+        <div class="ps p"><span class="pi">◈</span>Strategy<br>Engine</div><div class="pa">▶</div>
+        <div class="ps"><span class="pi">↗</span>Angle<br>Calc</div><div class="pa">▶</div>
+        <div class="ps c"><span class="pi">📡</span>ROS<br>Publish</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE SIM -->
+  <div class="sh rev" style="transition-delay:.09s">
+    <span class="shp">robot@strategy:~$</span>
+    <span class="shc">./live_strategy</span>
+    <span class="sha">--field-map --cv-overlay --decision-feed</span>
+  </div>
+  <div class="g2 rev" style="transition-delay:.1s">
+
+    <!-- LEFT: CV feed + IMU -->
+    <div style="display:flex;flex-direction:column;gap:.8rem">
+      <div class="cam-panel">
+        <div class="cam-header">
+          <span><span class="rdot live"></span>ROBOT-EYE CAM · /dev/video0</span>
+          <span id="fps-disp">28.2 FPS · 12ms</span>
+        </div>
+        <canvas id="cv-canvas" width="560" height="320"></canvas>
+        <div class="cam-badge" id="cv-badge" style="color:var(--green)">SCANNING...</div>
+      </div>
+      <div class="tc">
+        <div class="tch"><div class="tcd" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div>IMU + SENSOR FUSION</div>
+        <div class="tcb" style="padding:.8rem 1rem">
+          <div class="gauge-grid">
+            <div class="gauge-item">
+              <div class="gauge-label">Pitch (IMU Y)</div>
+              <div class="gauge-val" id="g-pitch" style="color:var(--cyan)">0.0°</div>
+              <div class="gauge-bar-wrap"><div class="gauge-bar" id="gb-pitch" style="width:50%;background:var(--cyan)"></div></div>
+            </div>
+            <div class="gauge-item">
+              <div class="gauge-label">Roll (IMU X)</div>
+              <div class="gauge-val" id="g-roll" style="color:var(--cyan)">0.0°</div>
+              <div class="gauge-bar-wrap"><div class="gauge-bar" id="gb-roll" style="width:50%;background:var(--cyan)"></div></div>
+            </div>
+            <div class="gauge-item">
+              <div class="gauge-label">Dist. to Hoop</div>
+              <div class="gauge-val" id="g-dist" style="color:var(--amber)">—</div>
+              <div class="gauge-bar-wrap"><div class="gauge-bar" id="gb-dist" style="width:0%;background:var(--amber)"></div></div>
+            </div>
+            <div class="gauge-item">
+              <div class="gauge-label">Opponent Dist.</div>
+              <div class="gauge-val" id="g-opp" style="color:var(--red)">—</div>
+              <div class="gauge-bar-wrap"><div class="gauge-bar" id="gb-opp" style="width:0%;background:var(--red)"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Field map + decision + log -->
+    <div style="display:flex;flex-direction:column;gap:.8rem">
+      <div class="field-wrap">
+        <div class="field-header">
+          <span>◈ FIELD MAP — ZONE CLASSIFIER</span>
+          <span id="zone-label" style="color:var(--amber)">ZONE: —</span>
+        </div>
+        <canvas id="field-canvas" width="460" height="240"></canvas>
+      </div>
+
+      <div class="tc">
+        <div class="tch"><div class="tcd" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div>STRATEGY DECISION OUTPUT</div>
+        <div class="decision-display">
+          <div class="dec-label">CURRENT ACTION</div>
+          <div class="dec-action dribble" id="dec-action">DRIBBLE</div>
+          <div style="font-size:.72rem;color:var(--text-dim);min-height:1.1rem;margin-bottom:.3rem" id="dec-reason">Moving to approach zone...</div>
+          <div style="font-size:.62rem;color:var(--text-dim)" id="dec-zone">ZONE A · dist=4.2m · opp=safe</div>
+        </div>
+        <div style="border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr 1fr">
+          <div style="padding:.7rem;text-align:center;border-right:1px solid var(--border)">
+            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem">Pan error</div>
+            <div class="mv-c" style="font-family:var(--font-vt);font-size:1.7rem" id="a-pan">—</div>
+          </div>
+          <div style="padding:.7rem;text-align:center;border-right:1px solid var(--border)">
+            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem">Shoot θ</div>
+            <div class="mv-a" style="font-family:var(--font-vt);font-size:1.7rem" id="a-shoot">—</div>
+          </div>
+          <div style="padding:.7rem;text-align:center">
+            <div style="font-size:.58rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem">IMU comp.</div>
+            <div class="mv-r" style="font-family:var(--font-vt);font-size:1.7rem" id="a-imu">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tc">
+        <div class="tch"><div class="tcd" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>STRATEGY LOG</div>
+        <div class="tcb" style="padding:.5rem .8rem">
+          <div class="term-log" id="strat-log">
+            <div class="tl g">[SYS] Strategy engine v2.1 initialized</div>
+            <div class="tl">[SYS] Loading YOLOv8n weights/best.pt...</div>
+            <div class="tl g">[OK]  Model ready — 3 classes detected</div>
+            <div class="tl c">[IMU] MPU-6050 calibration complete</div>
+            <div class="tl a">[STR] ABU Robocon match started</div>
+            <div class="tl g">[RUN] Entering field — DRIBBLE mode</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZONES -->
+  <div class="sh rev" style="transition-delay:.12s">
+    <span class="shp">robot@strategy:~$</span>
+    <span class="shc">cat config/zones.yaml</span>
+  </div>
+  <div class="g4 rev" style="transition-delay:.13s">
+    <div class="zone-card z-dribble" id="zc-dribble">
+      <div class="zc-icon" style="color:var(--cyan)">◎</div>
+      <div class="zc-name">Zone A — Dribble</div>
+      <div class="zc-range" style="color:var(--cyan)">dist &gt; 4.0 m</div>
+      <div class="zc-desc">Robot terlalu jauh. Navigasi ke zone B sambil dribble, track lawan, hindari tabrakan.</div>
+      <div class="zc-badge" style="border-color:var(--cyan);color:var(--cyan)">NAVIGATE</div>
+    </div>
+    <div class="zone-card z-approach" id="zc-approach">
+      <div class="zc-icon" style="color:var(--amber)">◉</div>
+      <div class="zc-name">Zone B — Approach</div>
+      <div class="zc-range" style="color:var(--amber)">1.8 m &lt; dist ≤ 4.0 m</div>
+      <div class="zc-desc">Sweet spot. Mulai alignment ke hoop, hitung pan_err &amp; dist, tunggu lawan clear sebelum maju.</div>
+      <div class="zc-badge" style="border-color:var(--amber);color:var(--amber)">ALIGN</div>
+    </div>
+    <div class="zone-card z-shoot" id="zc-shoot">
+      <div class="zc-icon" style="color:var(--green)">⊕</div>
+      <div class="zc-name">Zone C — Shoot</div>
+      <div class="zc-range" style="color:var(--green)">0.8 m &lt; dist ≤ 1.8 m</div>
+      <div class="zc-desc">Range optimal. Eksekusi full parabola angle chain: pixel offset → depth → IMU comp → θ_final.</div>
+      <div class="zc-badge" style="border-color:var(--green);color:var(--green)">SHOOT</div>
+    </div>
+    <div class="zone-card z-dunk" id="zc-dunk">
+      <div class="zc-icon" style="color:var(--purple)">◈</div>
+      <div class="zc-name">Zone D — Slam Dunk</div>
+      <div class="zc-range" style="color:var(--purple)">dist ≤ 0.8 m</div>
+      <div class="zc-desc">Skip parabola — robot cukup dekat. Arm aktuator extend vertikal, bola masuk dari atas hoop langsung.</div>
+      <div class="zc-badge" style="border-color:var(--purple);color:var(--purple)">SLAM DUNK</div>
+    </div>
+  </div>
+
+  <!-- ANGLE FORMULA + CHART -->
+  <div class="sh rev" style="transition-delay:.14s">
+    <span class="shp">robot@strategy:~$</span>
+    <span class="shc">python angle_solver.py</span>
+    <span class="sha">--imu-comp --hoop-fixed --pixel-offset --depth</span>
+  </div>
+  <div class="g2 rev" style="transition-delay:.15s">
+    <div class="tc">
+      <div class="tch"><div class="tcd" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>SHOOT ANGLE FORMULA CHAIN — 4 INPUT FUSION</div>
+      <div class="tcb">
+        <div style="font-size:.62rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.6rem">Step 1 — Pixel offset → angular error</div>
+        <div style="font-size:.78rem;line-height:2.1;margin-bottom:.9rem">
+          <div><span style="color:var(--text-dim)">Δx_px &nbsp;&nbsp;&nbsp;</span>= hoop_cx − frame_cx <span style="color:var(--border-hi)">[pixel]</span></div>
+          <div><span style="color:var(--cyan)">pan_err &nbsp;</span>= Δx_px × (FOV_h / W) <span style="color:var(--border-hi)">[°, yaw motor target]</span></div>
+          <div><span style="color:var(--cyan)">tilt_err </span>= Δy_px × (FOV_v / H) <span style="color:var(--border-hi)">[°, tilt correction]</span></div>
+        </div>
+        <div style="font-size:.62rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.6rem">Step 2 — Bounding box → depth</div>
+        <div style="font-size:.78rem;line-height:2.1;margin-bottom:.9rem">
+          <div><span style="color:var(--amber)">dist &nbsp;&nbsp;&nbsp;&nbsp;</span>= (f_px × D_hoop) / bb_h <span style="color:var(--border-hi)">[m]</span></div>
+          <div style="font-size:.71rem;color:var(--text-dim)"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;D_hoop=0.45m · f_px=focal in px</div>
+        </div>
+        <div style="font-size:.62rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.6rem">Step 3 — Parabola angle (Zone C only)</div>
+        <div style="font-size:.78rem;line-height:2.1;margin-bottom:.9rem">
+          <div><span style="color:var(--text-dim)">Δh &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>= H_hoop(3.05m) − H_robot_cam</div>
+          <div><span style="color:var(--green)">θ_raw &nbsp;&nbsp;</span>= atan( (v²+√(v⁴−g(gd²+2Δh·v²))) / gd )</div>
+          <div style="font-size:.71rem;color:var(--text-dim)"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v=8 m/s · g=9.81 m/s²</div>
+        </div>
+        <div style="font-size:.62rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:.6rem">Step 4 — IMU compensation</div>
+        <div style="font-size:.78rem;line-height:2.1">
+          <div><span style="color:var(--red)">θ_final </span>= θ_raw − pitch_imu − tilt_err</div>
+          <div><span style="color:var(--text-dim)">pan_cmd </span>= pan_err <span style="color:var(--border-hi)">[→ /robot/yaw_cmd]</span></div>
+          <div><span style="color:var(--purple)">DUNK &nbsp;&nbsp;&nbsp;</span>= arm_extend(dist≤0.8m) <span style="color:var(--border-hi)">[skip θ]</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="cch"><div class="ccd" style="background:var(--amber)"></div>SHOOT θ vs DISTANCE — ZONE OVERLAY</div>
+      <div class="ccb ch280"><canvas id="angle-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DECISION TABLE -->
+  <div class="sh rev" style="transition-delay:.16s">
+    <span class="shp">robot@strategy:~$</span>
+    <span class="shc">cat strategy/decision_tree.py</span>
+    <span class="sha">--export-table</span>
+  </div>
+  <div class="tc rev gap-b" style="transition-delay:.17s">
+    <div class="tch"><div class="tcd" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div>FULL DECISION TABLE — ZONE × CONDITION → ACTION</div>
+    <div class="tcb" style="padding:.6rem .8rem">
+      <table class="mt">
+        <thead>
+          <tr><th>Zone</th><th>Dist. to Hoop</th><th>Opponent</th><th>Ball Held</th><th>IMU Stable</th><th>Decision</th><th>Angle Calc</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span style="color:var(--cyan)">A · FAR</span></td><td>&gt; 4.0 m</td><td>Any</td><td>Yes</td><td>Any</td><td><span class="mv-c">DRIBBLE</span></td><td>—</td></tr>
+          <tr><td><span style="color:var(--cyan)">A · FAR</span></td><td>&gt; 4.0 m</td><td>Any</td><td>No</td><td>Any</td><td><span class="mv-r">DEFEND / CHASE</span></td><td>—</td></tr>
+          <tr><td><span style="color:var(--amber)">B · MID</span></td><td>1.8–4.0 m</td><td>Blocking</td><td>Yes</td><td>Any</td><td><span class="mv-a">DRIBBLE (evade)</span></td><td>Stand-by</td></tr>
+          <tr><td><span style="color:var(--amber)">B · MID</span></td><td>1.8–4.0 m</td><td>Clear</td><td>Yes</td><td>Yes</td><td><span class="mv-a">APPROACH + ALIGN</span></td><td>pan_err, dist</td></tr>
+          <tr><td><span style="color:var(--green)">C · SHOOT</span></td><td>0.8–1.8 m</td><td>Clear</td><td>Yes</td><td>Yes</td><td><span class="mv-g">SHOOT</span></td><td>θ_final full chain</td></tr>
+          <tr><td><span style="color:var(--green)">C · SHOOT</span></td><td>0.8–1.8 m</td><td>Blocking</td><td>Yes</td><td>Yes</td><td><span class="mv-a">HOLD → WAIT CLEAR</span></td><td>Pre-computed</td></tr>
+          <tr><td><span style="color:var(--green)">C · SHOOT</span></td><td>0.8–1.8 m</td><td>Any</td><td>Yes</td><td>No</td><td><span class="mv-r">ABORT → STABILIZE</span></td><td>IMU unsafe</td></tr>
+          <tr><td><span style="color:var(--purple)">D · DUNK</span></td><td>≤ 0.8 m</td><td>Any</td><td>Yes</td><td>Yes</td><td><span class="mv-p">SLAM DUNK</span></td><td>Arm extend only</td></tr>
+          <tr><td><span style="color:var(--purple)">D · DUNK</span></td><td>≤ 0.8 m</td><td>Any</td><td>Yes</td><td>No</td><td><span class="mv-r">ABORT → REVERSE</span></td><td>IMU unsafe</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DETECTION CLASSES + FREQ CHART -->
+  <div class="sh rev" style="transition-delay:.18s">
+    <span class="shp">robot@strategy:~$</span>
+    <span class="shc">python eval.py</span>
+    <span class="sha">--all-classes --match-sim</span>
+  </div>
+  <div class="g2 rev" style="transition-delay:.19s">
+    <div class="tc">
+      <div class="tch"><div class="tcd" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>3-CLASS DETECTION PERFORMANCE</div>
+      <div class="tcb" style="padding:.6rem .8rem">
+        <table class="mt">
+          <thead><tr><th>Class</th><th>Precision</th><th>Recall</th><th>mAP@50</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td><span style="color:var(--amber)">basketball</span></td><td class="mv-a">91.8%</td><td class="mv-a">93.1%</td><td class="mv-a">94.3%</td><td style="color:var(--text-dim);font-size:.71rem">Orange, high contrast</td></tr>
+            <tr><td><span style="color:var(--cyan)">hoop</span></td><td class="mv-c">89.2%</td><td class="mv-c">90.5%</td><td class="mv-c">91.7%</td><td style="color:var(--text-dim);font-size:.71rem">Fixed H=3.05m</td></tr>
+            <tr><td><span style="color:var(--red)">opponent_robot</span></td><td class="mv-r">86.4%</td><td class="mv-r">85.9%</td><td class="mv-r">88.5%</td><td style="color:var(--text-dim);font-size:.71rem">Variable shape</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:1rem">
+          <div class="kv"><span class="kk">Total training imgs</span><span class="kv-val mv-g">2,640 (3 classes)</span></div>
+          <div class="kv"><span class="kk">Augmentation</span><span class="kv-val">Mosaic · flip · HSV · blur · rotate</span></div>
+          <div class="kv"><span class="kk">Inference device</span><span class="kv-val">Raspberry Pi 5 · NCNN</span></div>
+          <div class="kv"><span class="kk">ROS topics out</span><span class="kv-val">/shoot_cmd · /yaw_cmd · /dunk_cmd</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="cch"><div class="ccd" style="background:var(--cyan)"></div>DECISION FREQUENCY — SIMULATED MATCH</div>
+      <div class="ccb ch280"><canvas id="dec-chart"></canvas></div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div>◈ BASKETBALL ROBOT · ABU ROBOCON · CV STRATEGY ENGINE · <span style="color:var(--green)">AXION/OS</span></div>
+  <div style="margin-top:.3rem"><a href="projects.html">← back to projects</a></div>
+</footer>
+
+<script>
+/* CURSOR */
+const cd=document.getElementById('cd'),cr=document.getElementById('cr');
+document.addEventListener('mousemove',e=>{
+  cd.style.left=e.clientX+'px';cd.style.top=e.clientY+'px';
+  cr.style.left=e.clientX+'px';cr.style.top=e.clientY+'px';
+});
+
+/* REVEAL */
+const ro=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('vis');ro.unobserve(e.target);}});
+},{threshold:.1});
+document.querySelectorAll('.rev').forEach(el=>ro.observe(el));
+
+/* CHART DEFAULTS */
+Chart.defaults.color='#3d8048';
+Chart.defaults.borderColor='rgba(0,255,65,0.08)';
+Chart.defaults.font.family="'Share Tech Mono',monospace";
+Chart.defaults.font.size=11;
+
+/* ANGLE CHART */
+const dists=[];
+for(let d=0.5;d<=5.5;d+=0.1)dists.push(+d.toFixed(1));
+function calcAngle(d,Dh=1.35,v=8,g=9.81){
+  const disc=Math.pow(v,4)-g*(g*d*d+2*Dh*v*v);
+  if(disc<0)return null;
+  return +(Math.atan((v*v+Math.sqrt(disc))/(g*d))*180/Math.PI).toFixed(1);
+}
+const allAngles=dists.map(d=>calcAngle(d));
+const zoneC=dists.map((d,i)=>(d>0.8&&d<=1.8)?allAngles[i]:null);
+const zoneD=dists.map((d,i)=>d<=0.8?allAngles[i]:null);
+
+new Chart(document.getElementById('angle-chart'),{
+  type:'line',
+  data:{
+    labels:dists.map(d=>d+'m'),
+    datasets:[
+      {label:'θ (all range)',data:allAngles,borderColor:'rgba(255,179,0,0.3)',borderWidth:1,borderDash:[4,3],pointRadius:0,tension:.35},
+      {label:'Zone C · Shoot',data:zoneC,borderColor:'#00ff41',backgroundColor:'rgba(0,255,65,0.1)',borderWidth:2.5,pointRadius:0,fill:true,tension:.35},
+      {label:'Zone D · Dunk',data:zoneD,borderColor:'#c084fc',backgroundColor:'rgba(192,132,252,0.15)',borderWidth:2.5,pointRadius:0,fill:true,tension:.35},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    scales:{
+      x:{title:{display:true,text:'Distance to hoop (m)',color:'#3d8048'},ticks:{maxTicksLimit:10}},
+      y:{title:{display:true,text:'θ (°)',color:'#3d8048'},min:30,max:85}
+    },
+    plugins:{legend:{labels:{color:'#a8ffb0',boxWidth:10}},tooltip:{callbacks:{label:ctx=>ctx.raw?`θ = ${ctx.raw}°`:'—'}}}
+  }
+});
+
+/* DECISION FREQUENCY CHART */
+new Chart(document.getElementById('dec-chart'),{
+  type:'doughnut',
+  data:{
+    labels:['DRIBBLE','APPROACH','SHOOT','SLAM DUNK','DEFEND / WAIT'],
+    datasets:[{
+      data:[35,22,20,9,14],
+      backgroundColor:['rgba(0,229,255,.28)','rgba(255,179,0,.28)','rgba(0,255,65,.28)','rgba(192,132,252,.32)','rgba(255,64,64,.22)'],
+      borderColor:['#00e5ff','#ffb300','#00ff41','#c084fc','#ff4040'],
+      borderWidth:1.5
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'right',labels:{color:'#a8ffb0',boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}%`}}}
+  }
+});
+
+/* ══════════════════════════════════════
+   LIVE SIMULATION ENGINE
+══════════════════════════════════════ */
+const cvC=document.getElementById('cv-canvas');
+const cvX=cvC.getContext('2d');
+const CW=cvC.width,CH=cvC.height;
+
+const fC=document.getElementById('field-canvas');
+const fX=fC.getContext('2d');
+const FW=fC.width,FH=fC.height;
+
+// Field scale: FW=460px ≈ 8m → SCALE = 8/460
+const SCALE=8/FW;
+function px2m(px){return +(px*SCALE).toFixed(2);}
+function m2px(m){return m/SCALE;}
+
+// Hoop fixed right side
+const HOOP={x:FW*0.87,y:FH*0.5};
+
+// Mutable state
+let robot={x:FW*0.12,y:FH*0.5};
+let opponent={x:FW*0.55,y:FH*0.4,vx:-0.55,vy:0.8};
+let pitch=0,roll=0;
+let frameN=0;
+let currentAction='DRIBBLE';
+
+function dist2d(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+
+function getZone(dm){
+  if(dm>4.0)return{z:'A',label:'FAR',color:'#00e5ff'};
+  if(dm>1.8)return{z:'B',label:'MID',color:'#ffb300'};
+  if(dm>0.8)return{z:'C',label:'SHOOT',color:'#00ff41'};
+  return{z:'D',label:'DUNK',color:'#c084fc'};
+}
+
+/* PHYSICS */
+function physics(){
+  // Robot orbits toward hoop slowly with wobble
+  const dr=dist2d(robot,HOOP);
+  const tx=(HOOP.x-robot.x)/dr,ty=(HOOP.y-robot.y)/dr;
+  const speed=dr>m2px(2)?1.3:0.7;
+  robot.x+=tx*speed+Math.sin(frameN*.05)*.8;
+  robot.y+=ty*speed+Math.cos(frameN*.07)*.7;
+  // Reset when too close
+  if(dr<m2px(0.4)){robot.x=FW*0.1+Math.random()*FW*0.05;robot.y=FH*0.3+Math.random()*FH*0.4;}
+  // Clamp
+  robot.x=Math.max(10,Math.min(FW-10,robot.x));
+  robot.y=Math.max(10,Math.min(FH-10,robot.y));
+
+  // Opponent random walk around midfield
+  opponent.x+=opponent.vx;opponent.y+=opponent.vy;
+  if(opponent.x<FW*.25||opponent.x>FW*.72)opponent.vx*=-1;
+  if(opponent.y<FH*.1||opponent.y>FH*.9)opponent.vy*=-1;
+
+  // IMU drift
+  pitch+=(Math.random()-.5)*.25;pitch=Math.max(-5,Math.min(5,pitch));
+  roll+=(Math.random()-.5)*.18;roll=Math.max(-4,Math.min(4,roll));
+}
+
+/* STRATEGY */
+const ACTIONS={
+  DRIBBLE:{label:'DRIBBLE',cls:'dribble',badge:'DRIBBLING — NAVIGATING',bc:'var(--cyan)'},
+  APPROACH:{label:'APPROACH',cls:'approach',badge:'APPROACH — ALIGNING TO HOOP',bc:'var(--amber)'},
+  SHOOT:{label:'SHOOT',cls:'shoot',badge:'SHOOT — PARABOLA EXECUTING',bc:'var(--green)'},
+  SLAM_DUNK:{label:'SLAM DUNK',cls:'dunk',badge:'⚡ SLAM DUNK MODE ⚡',bc:'var(--purple)'},
+  DEFEND:{label:'DEFEND',cls:'defend',badge:'DEFEND — CHASING BALL',bc:'var(--red)'},
+  HOLD:{label:'HOLD SHOT',cls:'approach',badge:'HOLDING — WAIT PATH CLEAR',bc:'var(--amber)'},
+  ABORT:{label:'ABORT',cls:'defend',badge:'ABORT — IMU UNSTABLE',bc:'var(--red)'},
+};
+
+function strategy(){
+  const dr=dist2d(robot,HOOP);
+  const dm=px2m(dr);
+  const dop=px2m(dist2d(robot,opponent));
+  const zInfo=getZone(dm);
+  const imuOk=Math.abs(pitch)<3.5&&Math.abs(roll)<3;
+  const oppBlock=dop<1.1;
+  const ballHeld=true; // simplified: always held in this demo
+
+  let act;
+  if(!ballHeld){act='DEFEND';}
+  else if(zInfo.z==='D'){act=imuOk?'SLAM_DUNK':'ABORT';}
+  else if(zInfo.z==='C'){
+    if(!imuOk)act='ABORT';
+    else if(oppBlock)act='HOLD';
+    else act='SHOOT';
+  }else if(zInfo.z==='B'){
+    act=oppBlock?'DRIBBLE':'APPROACH';
+  }else{act='DRIBBLE';}
+
+  currentAction=act;
+
+  // Reason text
+  const reasons={
+    DRIBBLE:`Far (${dm}m) — navigating toward hoop`,
+    APPROACH:`Aligning d=${dm}m — computing pan+dist`,
+    SHOOT:`Clear shot d=${dm}m — executing θ_final`,
+    SLAM_DUNK:`DUNK ZONE d=${dm}m — arm extending!`,
+    DEFEND:`Opponent block (${dop}m) — waiting clear`,
+    HOLD:`Opponent ${dop}m — holding shot`,
+    ABORT:`IMU pitch=${pitch.toFixed(1)}° — aborting`,
+  };
+
+  // Update DOM
+  const aData=ACTIONS[act];
+  const decEl=document.getElementById('dec-action');
+  decEl.className='dec-action '+aData.cls;
+  decEl.textContent=aData.label;
+  document.getElementById('dec-reason').textContent=reasons[act]||'';
+  document.getElementById('dec-zone').textContent=`ZONE ${zInfo.z} · ${zInfo.label} · dist=${dm}m · opp=${dop}m`;
+  document.getElementById('zone-label').textContent=`ZONE ${zInfo.z} · ${zInfo.label}`;
+  document.getElementById('cv-badge').textContent=aData.badge;
+  document.getElementById('cv-badge').style.color=aData.bc;
+
+  // Angles
+  const hoopAngle=Math.atan2(HOOP.y-robot.y,HOOP.x-robot.x);
+  const panErr=+(Math.sin(hoopAngle)*31).toFixed(1); // approx
+  const theta=calcAngle(dm)??'—';
+  const imuComp=+(-pitch).toFixed(1);
+  document.getElementById('a-pan').textContent=panErr+'°';
+  document.getElementById('a-shoot').textContent=theta+(theta!=='—'?'°':'');
+  document.getElementById('a-imu').textContent=imuComp+'°';
+
+  // Gauges
+  document.getElementById('g-pitch').textContent=pitch.toFixed(1)+'°';
+  document.getElementById('gb-pitch').style.width=((pitch+5)/10*100)+'%';
+  document.getElementById('gb-pitch').style.background=Math.abs(pitch)>3?'var(--red)':'var(--cyan)';
+  document.getElementById('g-roll').textContent=roll.toFixed(1)+'°';
+  document.getElementById('gb-roll').style.width=((roll+4)/8*100)+'%';
+  document.getElementById('g-dist').textContent=dm+'m';
+  document.getElementById('gb-dist').style.width=Math.max(4,(1-dm/6)*100)+'%';
+  document.getElementById('g-opp').textContent=dop+'m';
+  document.getElementById('gb-opp').style.width=Math.max(4,(1-dop/5)*100)+'%';
+  document.getElementById('gb-opp').style.background=dop<1.5?'var(--red)':'var(--red)';
+
+  // Zone card highlights
+  const zMap={A:'zc-dribble',B:'zc-approach',C:'zc-shoot',D:'zc-dunk'};
+  ['zc-dribble','zc-approach','zc-shoot','zc-dunk'].forEach(id=>{
+    document.getElementById(id).classList.toggle('active',id===zMap[zInfo.z]);
+  });
+
+  return{dm,dop,zInfo,act,theta,panErr,imuComp};
+}
+
+/* DRAW FIELD */
+function drawField(st){
+  fX.fillStyle='#020905';fX.fillRect(0,0,FW,FH);
+
+  // Field lines
+  fX.strokeStyle='rgba(0,255,65,0.05)';fX.lineWidth=1;
+  for(let x=0;x<FW;x+=36){fX.beginPath();fX.moveTo(x,0);fX.lineTo(x,FH);fX.stroke();}
+  for(let y=0;y<FH;y+=36){fX.beginPath();fX.moveTo(0,y);fX.lineTo(FW,y);fX.stroke();}
+
+  // Zone rings
+  const zones=[
+    {r:m2px(4.0),fill:'rgba(0,229,255,0.04)',stroke:'rgba(0,229,255,0.2)',label:'A'},
+    {r:m2px(1.8),fill:'rgba(255,179,0,0.06)',stroke:'rgba(255,179,0,0.3)',label:'B'},
+    {r:m2px(0.8),fill:'rgba(0,255,65,0.08)',stroke:'rgba(0,255,65,0.4)',label:'C'},
+  ];
+  zones.forEach(z=>{
+    fX.beginPath();fX.arc(HOOP.x,HOOP.y,z.r,0,Math.PI*2);
+    fX.fillStyle=z.fill;fX.fill();
+    fX.strokeStyle=z.stroke;fX.lineWidth=.8;fX.stroke();
+  });
+  // Dunk zone
+  fX.beginPath();fX.arc(HOOP.x,HOOP.y,m2px(0.8),0,Math.PI*2);
+  fX.fillStyle='rgba(192,132,252,0.14)';fX.fill();
+  fX.strokeStyle='rgba(192,132,252,0.5)';fX.lineWidth=1;fX.stroke();
+
+  // Zone labels
+  fX.textAlign='center';
+  fX.font='8px Share Tech Mono';
+  fX.fillStyle='rgba(0,229,255,0.45)';fX.fillText('A',HOOP.x,HOOP.y-m2px(4.0)+10);
+  fX.fillStyle='rgba(255,179,0,0.55)';fX.fillText('B',HOOP.x,HOOP.y-m2px(1.8)+10);
+  fX.fillStyle='rgba(0,255,65,0.7)';fX.fillText('C',HOOP.x,HOOP.y-m2px(0.8)+10);
+  fX.fillStyle='rgba(192,132,252,0.8)';fX.fillText('D',HOOP.x,HOOP.y+7);
+
+  // Dashed line robot→hoop
+  const lc=st.zInfo.z==='D'?'#c084fc':st.zInfo.z==='C'?'#00ff41':st.zInfo.z==='B'?'#ffb300':'rgba(0,229,255,0.4)';
+  fX.beginPath();fX.setLineDash([5,5]);fX.strokeStyle=lc;fX.lineWidth=1;
+  fX.moveTo(robot.x,robot.y);fX.lineTo(HOOP.x,HOOP.y);fX.stroke();
+  fX.setLineDash([]);
+
+  // Hoop
+  fX.beginPath();fX.arc(HOOP.x,HOOP.y,9,0,Math.PI*2);
+  fX.fillStyle='rgba(0,229,255,0.2)';fX.fill();
+  fX.strokeStyle='#00e5ff';fX.lineWidth=2;fX.stroke();
+  fX.fillStyle='#00e5ff';fX.font='8px Share Tech Mono';fX.textAlign='center';
+  fX.fillText('HOOP',HOOP.x,HOOP.y-13);
+
+  // Opponent
+  fX.strokeStyle='#ff4040';fX.lineWidth=1.5;
+  fX.strokeRect(opponent.x-9,opponent.y-9,18,18);
+  fX.fillStyle='rgba(255,64,64,0.12)';fX.fillRect(opponent.x-9,opponent.y-9,18,18);
+  fX.fillStyle='#ff4040';fX.font='8px Share Tech Mono';fX.textAlign='center';
+  fX.fillText('OPP',opponent.x,opponent.y-13);
+
+  // Ball on robot
+  fX.beginPath();fX.arc(robot.x+8,robot.y-8,5,0,Math.PI*2);
+  fX.fillStyle='#ff8c00';fX.fill();
+
+  // Robot
+  fX.beginPath();fX.arc(robot.x,robot.y,11,0,Math.PI*2);
+  fX.fillStyle='rgba(0,255,65,0.1)';fX.fill();
+  fX.strokeStyle=lc;fX.lineWidth=2;fX.stroke();
+  // direction
+  const dr2=dist2d(robot,HOOP);
+  const nx=(HOOP.x-robot.x)/dr2,ny=(HOOP.y-robot.y)/dr2;
+  fX.beginPath();fX.moveTo(robot.x,robot.y);fX.lineTo(robot.x+nx*18,robot.y+ny*18);
+  fX.strokeStyle=lc;fX.lineWidth=1.5;fX.stroke();
+  fX.fillStyle=lc;fX.font='8px Share Tech Mono';fX.textAlign='center';
+  fX.fillText('ME',robot.x,robot.y+22);
+
+  // HUD
+  fX.fillStyle='rgba(0,0,0,0.75)';fX.fillRect(2,2,130,18);
+  fX.fillStyle=lc;fX.font='9px Share Tech Mono';fX.textAlign='left';
+  fX.fillText(`d=${st.dm}m  opp=${st.dop}m  Z:${st.zInfo.z}`,5,14);
+}
+
+/* DRAW CV */
+function drawCV(st){
+  cvX.fillStyle='#020905';cvX.fillRect(0,0,CW,CH);
+  // scanlines
+  cvX.fillStyle='rgba(0,0,0,0.07)';
+  for(let y=0;y<CH;y+=3)cvX.fillRect(0,y,CW,1);
+  // corner brackets
+  cvX.strokeStyle='rgba(0,255,65,0.28)';cvX.lineWidth=1.5;
+  const b=15;
+  [[8,8],[CW-8,8],[8,CH-8],[CW-8,CH-8]].forEach(([cx,cy])=>{
+    const sx=cx<CW/2?1:-1,sy=cy<CH/2?1:-1;
+    cvX.beginPath();cvX.moveTo(cx+sx*b,cy);cvX.lineTo(cx,cy);cvX.lineTo(cx,cy+sy*b);cvX.stroke();
+  });
+
+  // Hoop projection
+  const dr=dist2d(robot,HOOP);
+  const sc=Math.min(1,100/(dr*SCALE*18+8));
+  const hw=Math.max(28,130*sc),hh=Math.max(12,55*sc);
+  const hoopAngle=Math.atan2(HOOP.y-robot.y,HOOP.x-robot.x);
+  const pan=Math.sin(hoopAngle)*50;
+  const hcx=CW/2+pan,hcy=CH*0.38;
+
+  cvX.strokeStyle='#00e5ff';cvX.lineWidth=2;
+  cvX.beginPath();cvX.ellipse(hcx,hcy,hw/2,hh/2,0,0,Math.PI*2);cvX.stroke();
+  cvX.strokeRect(hcx-hw/2-5,hcy-hh/2-5,hw+10,hh+14);
+  cvX.fillStyle='rgba(0,229,255,0.06)';cvX.fillRect(hcx-hw/2-5,hcy-hh/2-5,hw+10,hh+14);
+  cvX.fillStyle='#00e5ff';cvX.font='11px Share Tech Mono';cvX.textAlign='left';
+  cvX.fillText(`hoop ${(87+Math.random()*5).toFixed(0)}%`,hcx-hw/2-3,hcy-hh/2-8);
+  // crosshair
+  cvX.strokeStyle='rgba(0,229,255,0.55)';cvX.lineWidth=1;
+  cvX.beginPath();cvX.moveTo(hcx-9,hcy);cvX.lineTo(hcx+9,hcy);cvX.stroke();
+  cvX.beginPath();cvX.moveTo(hcx,hcy-7);cvX.lineTo(hcx,hcy+7);cvX.stroke();
+
+  // Ball
+  const bx=CW/2+Math.sin(frameN*.05)*25,by=CH*.72;
+  const bg=cvX.createRadialGradient(bx-4,by-5,2,bx,by,20);
+  bg.addColorStop(0,'#ffcc44');bg.addColorStop(.5,'#ff8c00');bg.addColorStop(1,'#c45500');
+  cvX.beginPath();cvX.arc(bx,by,20,0,Math.PI*2);cvX.fillStyle=bg;cvX.fill();
+  cvX.strokeStyle='rgba(80,30,0,0.7)';cvX.lineWidth=1.5;
+  cvX.beginPath();cvX.moveTo(bx-20,by);cvX.lineTo(bx+20,by);cvX.stroke();
+  cvX.beginPath();cvX.arc(bx,by,20,-.5,.5);cvX.stroke();
+  cvX.beginPath();cvX.arc(bx,by,20,Math.PI-.5,Math.PI+.5);cvX.stroke();
+  cvX.strokeStyle='#ffb300';cvX.lineWidth=1.5;
+  cvX.strokeRect(bx-27,by-27,54,54);
+  cvX.fillStyle='rgba(255,179,0,0.07)';cvX.fillRect(bx-27,by-27,54,54);
+  cvX.fillStyle='#ffb300';cvX.font='11px Share Tech Mono';cvX.textAlign='left';
+  cvX.fillText(`ball ${(89+Math.random()*7).toFixed(0)}%`,bx-25,by-31);
+
+  // Opponent robot (if nearby)
+  const dop=dist2d(robot,opponent);
+  if(dop<m2px(3.5)){
+    const oAngle=Math.atan2(opponent.y-robot.y,opponent.x-robot.x);
+    const oPan=Math.sin(oAngle-hoopAngle)*90;
+    const oscl=Math.min(1,70/(dop*SCALE*16+5));
+    const ow=Math.max(22,85*oscl),oh=Math.max(18,75*oscl);
+    const ocx=CW/2+oPan,ocy=CH*.62;
+    cvX.strokeStyle='#ff4040';cvX.lineWidth=1.5;
+    cvX.strokeRect(ocx-ow/2,ocy-oh/2,ow,oh);
+    cvX.fillStyle='rgba(255,64,64,0.08)';cvX.fillRect(ocx-ow/2,ocy-oh/2,ow,oh);
+    cvX.fillStyle='#ff4040';cvX.font='11px Share Tech Mono';cvX.textAlign='left';
+    cvX.fillText(`opponent ${(82+Math.random()*8).toFixed(0)}%`,ocx-ow/2,ocy-oh/2-7);
+    // threat line
+    if(px2m(dop)<1.5){
+      cvX.strokeStyle='rgba(255,64,64,0.45)';cvX.lineWidth=1;cvX.setLineDash([3,3]);
+      cvX.beginPath();cvX.moveTo(ocx,ocy);cvX.lineTo(hcx,hcy);cvX.stroke();
+      cvX.setLineDash([]);
+    }
+  }
+
+  // Parabola arc (Zone C) or dunk indicator (Zone D)
+  if(st.zInfo.z==='C'&&st.theta!=='—'){
+    const trad=parseFloat(st.theta)*Math.PI/180;
+    const v0=8,g=9.81;
+    cvX.strokeStyle='rgba(0,255,65,0.55)';cvX.lineWidth=1.5;cvX.setLineDash([4,3]);
+    cvX.beginPath();
+    const sx=CW/2,sy=CH-15;
+    for(let t=0;t<=1.5;t+=0.04){
+      const px2=sx+(v0*Math.cos(trad)*t)*20;
+      const py2=sy-(v0*Math.sin(trad)*t-0.5*g*t*t)*13;
+      t===0?cvX.moveTo(px2,py2):cvX.lineTo(px2,py2);
+      if(py2<hcy)break;
+    }
+    cvX.stroke();cvX.setLineDash([]);
+    cvX.fillStyle='rgba(0,255,65,0.7)';cvX.font='10px Share Tech Mono';cvX.textAlign='left';
+    cvX.fillText(`θ=${st.theta}°`,CW/2+5,CH-18);
+  }
+  if(st.zInfo.z==='D'){
+    cvX.strokeStyle='rgba(192,132,252,0.6)';cvX.lineWidth=2;
+    cvX.beginPath();cvX.moveTo(CW/2,CH-20);cvX.lineTo(CW/2,hcy+10);cvX.stroke();
+    // up arrow
+    cvX.beginPath();cvX.moveTo(CW/2-8,hcy+25);cvX.lineTo(CW/2,hcy+10);cvX.lineTo(CW/2+8,hcy+25);cvX.stroke();
+    cvX.fillStyle='#c084fc';cvX.font='10px Share Tech Mono';cvX.textAlign='center';
+    cvX.fillText('ARM EXTEND',CW/2,CH-5);
+  }
+
+  // HUD
+  cvX.fillStyle='rgba(0,255,65,0.65)';cvX.font='10px Share Tech Mono';cvX.textAlign='left';
+  cvX.fillText(`F:${String(frameN).padStart(5,'0')}`,8,15);
+  cvX.textAlign='right';
+  const zc=st.zInfo.z==='D'?'#c084fc':st.zInfo.z==='C'?'#00ff41':st.zInfo.z==='B'?'#ffb300':'#00e5ff';
+  cvX.fillStyle=zc;cvX.fillText(`ZONE ${st.zInfo.z} · ${st.zInfo.label}`,CW-6,15);
+}
+
+/* LOG */
+const logEl=document.getElementById('strat-log');
+const LOGS={
+  DRIBBLE:[{c:'c',t:'[STR] DRIBBLE — navigating to zone B'},{c:'c',t:'[NAV] Pathfinding active'},{c:'',t:'[KLM] Ball tracker locked'}],
+  APPROACH:[{c:'a',t:'[STR] APPROACH — entering zone B'},{c:'a',t:'[ANG] pan_err + dist computing'},{c:'',t:'[IMU] Checking stability'}],
+  SHOOT:[{c:'g',t:'[STR] SHOOT — parabola solved'},{c:'g',t:'[ANG] θ_final → /robot/shoot_cmd'},{c:'a',t:'[ROS] shoot_cmd published'}],
+  SLAM_DUNK:[{c:'p',t:'[STR] ⚡ SLAM DUNK — arm extending'},{c:'p',t:'[ACT] Actuator → 180° deploy'},{c:'g',t:'[ROS] /robot/dunk_cmd published'}],
+  DEFEND:[{c:'r',t:'[STR] DEFEND — chasing ball'},{c:'r',t:'[DET] opponent_robot tracked'},{c:'',t:'[NAV] Moving to intercept'}],
+  HOLD:[{c:'a',t:'[STR] HOLD — opponent blocking lane'},{c:'',t:'[DET] Waiting for clear path...'},{c:'a',t:'[STR] Pre-computing θ_final'}],
+  ABORT:[{c:'r',t:'[ERR] ABORT — IMU unsafe'},{c:'r',t:'[IMU] pitch > threshold'},{c:'a',t:'[STR] Stabilizing before retry'}],
+};
+let lastAct='',logCool=0;
+function addLog(act){
+  if(act===lastAct&&logCool>0){logCool--;return;}
+  const msgs=LOGS[act]||[];
+  const m=msgs[Math.floor(Math.random()*msgs.length)];
+  if(!m)return;
+  const d=document.createElement('div');d.className='tl '+m.c;d.textContent=m.t;
+  logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;
+  if(logEl.children.length>60)logEl.removeChild(logEl.firstChild);
+  lastAct=act;logCool=4;
+}
+
+/* MAIN LOOP */
+function loop(){
+  physics();
+  const st=strategy();
+  drawCV(st);
+  drawField(st);
+  addLog(currentAction);
+  frameN++;
+  document.getElementById('fps-disp').textContent=`${(27+Math.random()*.9).toFixed(1)} FPS · ${(10+Math.random()*4).toFixed(0)}ms`;
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+  <!-- Larangan Klik Kanan  -->
+  <script>
+    document.onkeydown = function(e) {
+      // Mematikan F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+H, Ctrl+A, Ctrl+F
+      if (
+        event.keyCode == 123 || 
+        (e.ctrlKey && (e.keyCode == 'U'.charCodeAt(0) || e.keyCode == 'S'.charCodeAt(0) || 
+        e.keyCode == 'A'.charCodeAt(0) || e.keyCode == 'F'.charCodeAt(0) || e.keyCode == 'E'.charCodeAt(0))) ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0)))
+      ) {
+        return false;
+      }
+    };
+  
+    // Mematikan Klik Kanan tanpa pesan alert
+    document.oncontextmenu = function(e) {
+      return false;
+    };
+  
+    // Tambahan: Mematikan Drag/Seleksi Teks (Opsional tapi sering dipakai bersama)
+    document.onselectstart = function() {
+      return false;
+    };
+  </script>
+</body>
+</html>

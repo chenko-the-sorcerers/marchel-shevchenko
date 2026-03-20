@@ -16,7 +16,7 @@
           <span class="text-dim">VISITORS:</span>
           <span class="text-green" id="visitor-count" style="margin-left:0.3rem">...</span>
           &nbsp;|&nbsp;
-          <span class="text-green">v1.0.0</span>
+          <span class="text-green">v2.1.7</span>
         </span>`;
       document.body.appendChild(ft);
       document.getElementById('footer-year').textContent = new Date().getFullYear();

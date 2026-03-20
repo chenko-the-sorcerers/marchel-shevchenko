@@ -840,5 +840,30 @@ document.getElementById('nav-hamburger').addEventListener('click',()=>document.g
 /* bg canvas */
 (function(){const c=document.getElementById('bg-canvas'),ctx=c.getContext('2d');function rsz(){c.width=innerWidth;c.height=innerHeight}rsz();window.addEventListener('resize',rsz);const pts=Array.from({length:48},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1.2+.4,a:Math.random()*.22+.05}));(function draw(){ctx.clearRect(0,0,c.width,c.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=c.width;if(p.x>c.width)p.x=0;if(p.y<0)p.y=c.height;if(p.y>c.height)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(0,255,65,'+p.a+')';ctx.fill()});for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<85){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle='rgba(0,255,65,'+(0.05*(1-d/85))+')';ctx.lineWidth=.5;ctx.stroke()}}requestAnimationFrame(draw)})()})();
 </script>
+
+  <!-- Larangan Klik Kanan  -->
+  <script>
+    document.onkeydown = function(e) {
+      // Mematikan F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+H, Ctrl+A, Ctrl+F
+      if (
+        event.keyCode == 123 || 
+        (e.ctrlKey && (e.keyCode == 'U'.charCodeAt(0) || e.keyCode == 'S'.charCodeAt(0) || 
+        e.keyCode == 'A'.charCodeAt(0) || e.keyCode == 'F'.charCodeAt(0) || e.keyCode == 'E'.charCodeAt(0))) ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0)))
+      ) {
+        return false;
+      }
+    };
+  
+    // Mematikan Klik Kanan tanpa pesan alert
+    document.oncontextmenu = function(e) {
+      return false;
+    };
+  
+    // Tambahan: Mematikan Drag/Seleksi Teks (Opsional tapi sering dipakai bersama)
+    document.onselectstart = function() {
+      return false;
+    };
+  </script>
 </body>
 </html>

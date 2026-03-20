@@ -1,9 +1,15 @@
 /* pages/home.js */
 document.addEventListener('DOMContentLoaded', () => {
-  Navbar.render();
-  Footer.render();
-  CRT.init({ clockId: 'nav-clock' });
-  Boot.run(() => requestAnimationFrame(() => requestAnimationFrame(initPage)));
+  try {
+    Navbar.render();
+    Footer.render();
+    CRT.init({ clockId: 'nav-clock' });
+    if (typeof Terminal !== 'undefined') Terminal.init();
+    Boot.run(() => requestAnimationFrame(() => requestAnimationFrame(initPage)));
+  } catch(e) {
+    console.error('[home.js] init error:', e);
+    requestAnimationFrame(() => requestAnimationFrame(initPage));
+  }
 });
 
 function initPage() {
@@ -338,32 +344,58 @@ function initStats() {
 function renderFeatured() {
   const grid = document.getElementById('feat-grid');
   if (!grid) return;
+  if (typeof CV === 'undefined' || !CV.projects) {
+    console.error('[home.js] CV not defined');
+    return;
+  }
   const cm = { green:'badge-green', amber:'badge-amber', cyan:'badge-cyan' };
-  CV.projects.slice(0,9).forEach((p,i) => {
-    const card = document.createElement('div');
-    card.className = 't-card reveal';
-    card.style.transitionDelay = (i*0.06)+'s';
-    card.innerHTML = `
+
+  // Filter featured projects, fallback to first 6 if none marked
+  const featured = CV.projects.filter(p => p.featured);
+  const list = featured.length > 0 ? featured : CV.projects.slice(0, 6);
+
+  list.forEach((p, i) => {
+    // Wrap in <a> if project has its own page, otherwise plain div
+    const wrapper = document.createElement(p.href ? 'a' : 'div');
+    wrapper.className = 't-card reveal';
+    wrapper.style.transitionDelay = (i * 0.06) + 's';
+    if (p.href) {
+      wrapper.href = p.href;
+      wrapper.style.cursor = 'pointer';
+      wrapper.style.display = 'block';
+      wrapper.style.textDecoration = 'none';
+      wrapper.style.color = 'inherit';
+    }
+
+    wrapper.innerHTML = `
       <div class="t-card-header">
         <div class="t-card-dot"></div>
         <span>// ${p.num}</span>
         <span class="badge ${cm[p.color]||'badge-dim'}" style="margin-left:auto">${p.tag}</span>
+        ${p.href ? `<span style="font-size:0.65rem;color:var(--green);margin-left:0.5rem;opacity:0.7">▶ VIEW</span>` : ''}
       </div>
       <div class="t-card-body">
         <div class="font-vt text-bright" style="font-size:1.3rem;margin-bottom:0.4rem;">${p.title}</div>
         <div class="text-dim" style="font-size:0.82rem;line-height:1.75;margin-bottom:0.8rem;">${p.desc}</div>
         <div style="display:flex;flex-wrap:wrap;gap:0.3rem;">
-          ${p.stack.map(t=>`<span class="badge badge-dim">${t}</span>`).join('')}
+          ${p.stack.map(t => `<span class="badge badge-dim">${t}</span>`).join('')}
         </div>
         <div class="text-dim" style="font-size:0.72rem;margin-top:0.7rem;border-top:1px solid var(--border);padding-top:0.5rem;">
           ${p.event} &nbsp;·&nbsp; ${p.year}
         </div>
       </div>`;
-    card.addEventListener('mouseenter', () => {
-      const t = card.querySelector('.font-vt');
-      t.classList.remove('glitch'); void t.offsetWidth; t.classList.add('glitch');
+
+    wrapper.addEventListener('mouseenter', () => {
+      const t = wrapper.querySelector('.font-vt');
+      if (t) { t.classList.remove('glitch'); void t.offsetWidth; t.classList.add('glitch'); }
+      if (p.href) wrapper.style.borderColor = 'var(--green)';
     });
-    grid.appendChild(card);
+    wrapper.addEventListener('mouseleave', () => {
+      if (p.href) wrapper.style.borderColor = '';
+    });
+
+    grid.appendChild(wrapper);
   });
+
   setTimeout(() => grid.querySelectorAll('.reveal').forEach(el => el.classList.add('visible')), 50);
 }

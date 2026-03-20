@@ -12,12 +12,12 @@
   <meta property="og:type"        content="website" />
   <meta property="og:url"         content="https://marchel-shevchenko.vercel.app/" />
   <meta property="og:title"       content="Marchel Shevchenko — AI Architect & Builder" />
-  <meta property="og:description" content="AI Architect building multimodal AI systems, foundation models, and NLP for Indonesian local languages. Founder of Data Sorcerers. MIT Pre-PhD." />
+  <meta property="og:description" content="AI Architect building multimodal AI systems, foundation models, and NLP for Indonesian local languages. Founder of Data Sorcerers." />
   <meta property="og:image"       content="https://marchel-shevchenko.vercel.app/og-image.png" />
   <meta property="og:site_name"   content="Marchel Shevchenko Portfolio" />
   <meta name="twitter:card"        content="summary_large_image" />
   <meta name="twitter:title"       content="Marchel Shevchenko — AI Architect & Builder" />
-  <meta name="twitter:description" content="AI Architect building multimodal AI systems, foundation models, and NLP for Indonesian local languages. Founder of Data Sorcerers. MIT Pre-PhD." />
+  <meta name="twitter:description" content="AI Architect building multimodal AI systems, foundation models, and NLP for Indonesian local languages. Founder of Data Sorcerers." />
   <meta name="twitter:image"       content="https://marchel-shevchenko.vercel.app/og-image.png" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23020905'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%2300ff41'>M</text></svg>" />
   <link rel="stylesheet" href="styles/globals.css" />
@@ -27,9 +27,11 @@
   <script src="components/navbar.js" defer></script>
   <script src="components/footer.js" defer></script>
   <script src="components/boot.js" defer></script>
-  <script src="pages/wormhole.js" defer></script>
   <script src="pages/home.js" defer></script>
-  <script src="components/prank.js" defer></script>
+  <script src="pages/wormhole.js" defer></script>
+  <script src="components/terminal.js" defer></script>
+  <script src="components/terminal-chaos.js" defer></script>
+  <!-- <script src="components/prank.js" defer></script> -->
   <style>
     #hero {
       min-height: 100vh;
@@ -47,6 +49,10 @@
       width: 100%; height: 100%;
       z-index: 0;
       pointer-events: none;
+      background: transparent;
+    }
+    @media (max-width: 480px) {
+      #hero-canvas { opacity: 0.4; }
     }
 
     .term-win { width: 100%; max-width: 840px; position: relative; z-index: 2; }
@@ -180,9 +186,10 @@
         <div class="hero-pills">
           <div class="pill"><span>◆</span>Yogyakarta, Indonesia</div>
           <div class="pill"><span>◆</span>STATUS: ONLINE & BUILDING</div>
-          <div class="pill"><span>◆</span>AI FOR CULTURE + LANGUAGE</div>
-          <div class="pill"><span>◆</span>MIT Pre-PhD CANDIDATE</div>
+          <div class="pill"><span>◆</span>AI for CULTURE + LANGUAGE</div>
+          <div class="pill"><span>◆</span>AI for Healthcare</div>
           <div class="pill"><span>◆</span>NVIDIA INCEPTION AWARDEE</div>
+          <div class="pill"><span>◆</span>Founder Data Sorcerers</div>
         </div>
       </div>
     </div>
@@ -213,29 +220,54 @@
     </div>
   </div>
 
-  <section id="feat-section" style="max-width:1100px;margin:0 auto;padding:4rem 2rem 5rem;">
+  <section id="feat-section" style="max-width:1100px;margin:0 auto;padding:4rem 2rem 5rem;position:relative;z-index:10;background:var(--bg);isolation:isolate;">
     <div class="section-header reveal">
       <span class="sh-prompt">marchel@sys:~$</span>
       <span class="sh-cmd">ls -la ./projects/</span>
       <span class="sh-args">--featured</span>
     </div>
     <div id="feat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.1rem;"></div>
-    <div style="text-align:center;margin-top:2rem;">
-      <a href="projects.html" class="btn btn-ghost">VIEW ALL PROJECTS →</a>
+    <div style="text-align:center;margin-top:2rem;position:relative;z-index:11;">
+      <a href="projects.html" class="btn btn-ghost" style="display:inline-block;">VIEW ALL PROJECTS →</a>
     </div>
   </section>
 
   <!-- ══════════════════════════════════════════════════════
        PORTAL — fullscreen sticky, scroll-driven
        ══════════════════════════════════════════════════════ -->
-  <div id="portal-scroll-container" style="position:relative;height:400vh;">
-    <div id="portal-sticky" style="position:sticky;top:0;width:100vw;height:100vh;overflow:hidden;background:rgb(2,9,5);left:0;">
+  <div id="portal-scroll-container" style="position:relative;height:400vh;z-index:1;">
+    <div id="portal-sticky" style="position:sticky;top:0;width:100%;height:100svh;overflow:hidden;background:rgb(2,9,5);z-index:1;">
       <canvas id="portal-canvas" style="display:block;position:absolute;top:0;left:0;width:100%;height:100%;"></canvas>
       <div id="portal-hud" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6vh;pointer-events:none;z-index:2;">
         <div id="portal-label" style="font-family:'Share Tech Mono',monospace;font-size:clamp(0.7rem,1.4vw,0.9rem);color:rgba(0,255,65,0.55);letter-spacing:0.12em;text-align:center;transition:opacity 0.4s;">SCROLL TO ENTER THE GRID ▼</div>
       </div>
     </div>
   </div>
+
+  <!-- Larangan Klik Kanan  -->
+  <script>
+    document.onkeydown = function(e) {
+      // Mematikan F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S, Ctrl+H, Ctrl+A, Ctrl+F
+      if (
+        event.keyCode == 123 || 
+        (e.ctrlKey && (e.keyCode == 'U'.charCodeAt(0) || e.keyCode == 'S'.charCodeAt(0) || 
+        e.keyCode == 'A'.charCodeAt(0) || e.keyCode == 'F'.charCodeAt(0) || e.keyCode == 'E'.charCodeAt(0))) ||
+        (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0)))
+      ) {
+        return false;
+      }
+    };
+  
+    // Mematikan Klik Kanan tanpa pesan alert
+    document.oncontextmenu = function(e) {
+      return false;
+    };
+  
+    // Tambahan: Mematikan Drag/Seleksi Teks (Opsional tapi sering dipakai bersama)
+    document.onselectstart = function() {
+      return false;
+    };
+  </script>
 
 </body>
 </html>

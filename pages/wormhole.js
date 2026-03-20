@@ -163,7 +163,7 @@
     let lastScrollY  = -1;
     let scrollStale  = 0;     // seconds since last scroll
     const AUTO_SPEED = 0.055; // progress units per second (full journey ~18s)
-    const STALE_THRESHOLD = 0.8; // seconds of no scroll → start auto
+    const STALE_THRESHOLD = window.innerWidth < 768 ? 0.3 : 0.8;
   
     function init() {
       canvas = document.getElementById('portal-canvas');
@@ -172,6 +172,15 @@
       resize();
       window.addEventListener('resize', resize);
       window.addEventListener('scroll', onScroll, { passive: true });
+    // Touch: track swipe to drive progress on mobile
+    let touchStartY = 0;
+    window.addEventListener('touchstart', e => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    window.addEventListener('touchmove', e => {
+      const dy = touchStartY - e.touches[0].clientY;
+      if (Math.abs(dy) > 5) { scrollStale = 0; }
+    }, { passive: true });
   
       // IntersectionObserver — activate auto when section enters viewport
       const cont = document.getElementById('portal-scroll-container');
@@ -190,8 +199,9 @@
   
     function resize() {
       if (!canvas) return;
-      W = canvas.width  = window.innerWidth;
-      H = canvas.height = window.innerHeight;
+      const sticky = document.getElementById('portal-sticky');
+      W = canvas.width  = sticky ? sticky.offsetWidth  : window.innerWidth;
+      H = canvas.height = sticky ? sticky.offsetHeight : window.innerHeight;
     }
   
     function onScroll() {
@@ -741,15 +751,23 @@
       }
   
       // HUD
-      ctx.font=`${Math.floor(W*0.0095)}px 'Press Start 2P',monospace`;
+      // HUD — smaller on mobile
+    const hudSize = Math.floor(Math.min(W*0.0095, 9));
+    if (hudSize < 5 || W < 420) {
+      // Skip HUD text on very small screens, just do scanlines + flash
+    } else {
+      ctx.font=`${hudSize}px 'Press Start 2P',monospace`;
       ctx.fillStyle=`rgba(${r},${g},${b},0.52)`;
       ctx.textAlign='left';
       ctx.fillText(`SECTOR ${Math.floor(t*99).toString().padStart(2,'0')}`,W*0.03,H*0.09);
       ctx.fillText(`SPD ${(speed*12).toFixed(0)}%`,W*0.03,H*0.14);
-      ctx.textAlign='right';
-      ctx.fillText('USER: M.SHEVCHENKO',W*0.97,H*0.09);
-      ctx.fillText('GRID://AXION/OS',W*0.97,H*0.14);
+      if (W > 500) {
+        ctx.textAlign='right';
+        ctx.fillText('USER: M.SHEVCHENKO',W*0.97,H*0.09);
+        ctx.fillText('GRID://AXION/OS',W*0.97,H*0.14);
+      }
       ctx.textAlign='center';
+    }
   
       // Scanlines
       for (let y=0;y<H;y+=4) { ctx.fillStyle='rgba(0,0,0,0.055)'; ctx.fillRect(0,y,W,1); }

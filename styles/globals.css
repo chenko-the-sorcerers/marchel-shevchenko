@@ -728,3 +728,37 @@ body { animation: page-in 0.15s ease forwards; }
   .nav-logo { font-size: 0.42rem; }
   .nav-time { font-size: 0.95rem; }
 }
+/* ── BOOT OVERLAY MOBILE FIX ── */
+@media (max-width: 480px) {
+  #boot-overlay {
+    padding: 1rem !important;
+    align-items: flex-start !important;
+    overflow-y: auto;
+  }
+  #boot-overlay > div {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  #boot-ascii { display: none !important; }
+  #boot-log   { font-size: 0.82rem !important; min-height: 120px !important; }
+}
+
+/* ── HERO CANVAS MOBILE ── */
+@media (max-width: 768px) {
+  #hero-canvas { opacity: 0.35; }
+  .term-win-bar { font-size: 0.65rem; }
+  .term-win-bar .win-title { display: none; }
+  #hero-name { font-size: clamp(1.8rem, 8vw, 3rem) !important; }
+  #hero-subtitle { font-size: clamp(0.9rem, 4vw, 1.3rem) !important; }
+  .hero-tagline  { font-size: 0.72rem; }
+  .hero-pills    { gap: 0.4rem; }
+  .pill          { font-size: 0.65rem; }
+}
+
+/* ── PORTAL SECTION MOBILE ── */
+@media (max-width: 768px) {
+  #portal-scroll-container { height: 250vh; }
+}
+/* ── Portal z-index fix — feat-section stays clickable ── */
+#portal-scroll-container { isolation: isolate; }
+#feat-section a, #feat-section button { pointer-events: all !important; position: relative; z-index: 20; }

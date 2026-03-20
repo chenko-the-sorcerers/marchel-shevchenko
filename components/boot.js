@@ -7,22 +7,22 @@
    const Boot = (() => {
 
     const LOG = [
-      { text: '[BIOS]  POST check: CPU cores detected ......... OK',       cls: 'ok',   d: 100  },
-      { text: '[BIOS]  Memory: 64 GB ECC RAM ................... OK',       cls: 'ok',   d: 210  },
-      { text: '[KERN]  Loading AXION/OS kernel v2.7.1 ...........',         cls: 'info', d: 350  },
+      { text: '[BIOS]  POST check: CPU cores detected ........... OK',       cls: 'ok',   d: 100  },
+      { text: '[BIOS]  Memory: 64 GB ECC RAM .................... OK',       cls: 'ok',   d: 210  },
+      { text: '[KERN]  Loading AXION/OS kernel v2.7.1 ........... done',         cls: 'info', d: 350  },
       { text: '[KERN]  Mounting /sys/neural ..................... done',      cls: 'ok',   d: 490  },
-      { text: '[KERN]  Mounting /sys/language_models ........... done',     cls: 'ok',   d: 600  },
-      { text: '[NET]   Initialising GRID uplink .................',          cls: 'info', d: 740  },
+      { text: '[KERN]  Mounting /sys/language_models ............ done',     cls: 'ok',   d: 600  },
+      { text: '[NET]   Initialising GRID uplink ................. done',          cls: 'info', d: 740  },
       { text: '[NET]   Sector 7 node handshake .................. OK',      cls: 'ok',   d: 870  },
-      { text: '[GPU]   CUDA devices: 4× A100 ................... online',   cls: 'ok',   d: 1010 },
-      { text: '[AI]    Loading ARUNA 7B weights .................',          cls: 'info', d: 1160 },
-      { text: '[AI]    Loading DIALEKTA 2B weights ..............',          cls: 'info', d: 1280 },
+      { text: '[GPU]   CUDA devices: 4× A100 .................... online',   cls: 'ok',   d: 1010 },
+      { text: '[AI]    Loading ARUNA 7B weights ................. complete',          cls: 'info', d: 1160 },
+      { text: '[AI]    Loading DIALEKTA 2B weights .............. complete',          cls: 'info', d: 1280 },
       { text: '[AI]    Inference engine ......................... ready',    cls: 'ok',   d: 1420 },
       { text: '[SYS]   Operator profile: MARCHEL SHEVCHENKO',               cls: 'warn', d: 1570 },
-      { text: '[SYS]   Clearance level: ALPHA-7 ................ GRANTED',  cls: 'ok',   d: 1680 },
+      { text: '[SYS]   Clearance level: ALPHA-7 ................. GRANTED',  cls: 'ok',   d: 1680 },
       { text: '[WARN]  Temporal anomaly detected: +31 years from baseline', cls: 'warn', d: 1820 },
       { text: '[SYS]   Rendering portfolio interface ............',          cls: 'info', d: 1960 },
-      { text: '[SYS]   ████████████████████ 100% COMPLETE',                 cls: 'ok',   d: 2150 },
+      { text: '[SYS]   ████████████████████████████ 100% COMPLETE',                 cls: 'ok',   d: 2150 },
     ];
   
     const ASCII = `
@@ -54,12 +54,15 @@
         <div style="max-width:740px;width:100%;">
           <pre id="boot-ascii" style="
             font-family:var(--font-mono);
-            font-size:clamp(0.38rem,1.1vw,0.68rem);
+            font-size:clamp(0.32rem,1.1vw,0.65rem);
             color:var(--green);
             text-shadow:var(--glow-g);
             line-height:1.15;
             white-space:pre;
+            overflow:hidden;
+            max-width:100%;
             margin-bottom:0.5rem;
+            display:block;
           ">${ASCII}</pre>
           <div style="color:var(--amber);text-shadow:var(--glow-a);font-size:1.1rem;margin-bottom:0.3rem;">
             AXION/OS v2.7.1 — MARCHEL SHEVCHENKO PORTFOLIO TERMINAL
@@ -81,6 +84,11 @@
       `;
   
       document.body.prepend(overlay);
+      // Hide ASCII art on small screens to prevent overflow
+      if (window.innerWidth < 480) {
+        const ascii = document.getElementById('boot-ascii');
+        if (ascii) ascii.style.display = 'none';
+      }
   
       const logEl  = document.getElementById('boot-log');
       const barEl  = document.getElementById('boot-bar');
@@ -115,14 +123,20 @@
   
       setTimeout(() => {
         entEl.style.display = 'block';
+        let dismissed = false;
         const dismiss = () => {
+          if (dismissed) return;
+          dismissed = true;
           if (typeof SFX !== "undefined" && SFX.playClick) SFX.playClick();
-          overlay.style.transition = 'opacity 0.6 s';
+          overlay.style.transition = 'opacity 0.6s';
           overlay.style.opacity = '0';
           setTimeout(() => { overlay.remove(); onDone(); }, 620);
         };
         document.addEventListener('keydown', e => { if (e.key === 'Enter') dismiss(); }, { once: true });
-        overlay.addEventListener('click', dismiss, { once: true });
+        overlay.addEventListener('click',      dismiss, { once: true });
+        overlay.addEventListener('touchstart', dismiss, { once: true, passive: true });
+        // Auto-dismiss after 8s on mobile so users don't get stuck
+        if (window.innerWidth < 768) setTimeout(dismiss, 8000);
       }, lastDelay);
     }
   
